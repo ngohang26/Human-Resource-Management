@@ -48,7 +48,7 @@ public class PersonalInfo {
     @Column
     private String fieldOfStudy;
 
-    @Column
+    @Column(nullable = false)
     private String school;
 
 
