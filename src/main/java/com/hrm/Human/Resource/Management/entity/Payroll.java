@@ -2,6 +2,7 @@ package com.hrm.Human.Resource.Management.entity;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -32,11 +33,11 @@ public class Payroll {
     public Payroll() {
     }
 
-    public void calculateTax() {
+    public void calculateTax(boolean isResident, LocalDate contractStartDate, LocalDate contractEndDate) {
         double totalAllowance = allowances.stream().mapToDouble(Allowance::getAllowanceAmount).sum();
         double taxableIncome = baseSalary + totalAllowance + bonus;
-        if (employee.isResident()) {
-            long contractDuration = ChronoUnit.MONTHS.between(employee.getContract().getStartDate(), employee.getContract().getEndDate());
+        if (isResident) {
+            long contractDuration = ChronoUnit.MONTHS.between(contractStartDate, contractEndDate);
             if (contractDuration >= 3) {
                 if (taxableIncome > 0 && taxableIncome <= 5000000) {
                     tax = taxableIncome * 0.05;

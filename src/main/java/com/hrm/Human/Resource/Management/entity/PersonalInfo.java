@@ -25,13 +25,16 @@ public class PersonalInfo {
     private String birthPlace;
 
     @Column
-    private String residence;
+    private Boolean isResident;
+
+    @Column
+    private String sex;
 
     @Column
     private LocalDate birthDate;
 
-    @Column(nullable = false, unique = true)
-    @Pattern(regexp="(^$|[0-9]{11})", message="Identity card number must be a 9-digit number")
+    @Column( unique = true)
+    @Pattern(regexp="(^$|[0-9]{12})", message="Identity card number must be a 11-digit number")
     private String identityCardNumber;
 
     @Column
@@ -51,6 +54,9 @@ public class PersonalInfo {
     @Column(nullable = false)
     private String school;
 
+    public Boolean isResident() {
+        return isResident;
+    }
 
     public String getIdentityCardNumber() {
         return identityCardNumber;

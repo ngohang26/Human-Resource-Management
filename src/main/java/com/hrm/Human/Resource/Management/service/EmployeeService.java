@@ -2,6 +2,7 @@ package com.hrm.Human.Resource.Management.service;
 import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.response.EmployeeResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,9 +20,13 @@ public interface EmployeeService {
     List<Employee> getEmployeeEntities();
     List<Employee> getEmployees();
 
-    ResponseEntity<?> addEmployee(Employee employee);
+    ResponseEntity<?> addEmployee(String employeeString, MultipartFile file);
 
-    Employee updateEmployee(Long id, Employee updatedEmployee);
+//    Employee updateEmployee(Long id, Employee updatedEmployee);
+
+//    ResponseEntity<?> updateEmployee(Long id, Employee updatedEmployee);
+
+    ResponseEntity<?> updateEmployee(Long id, String employeeString, MultipartFile file);
 
     ResponseEntity<EmployeeResponse> deleteEmployee(Long id);
 
@@ -29,4 +34,7 @@ public interface EmployeeService {
 
     ResponseEntity<EmployeeResponse> hardDeleteEmployee(Long id);
 
+    boolean existsByIdentityCardNumber(String identityCardNumber);
+
+//    ResponseEntity<?> updateEmployee(Long id, String employeeString, MultipartFile file);
 }

@@ -25,27 +25,12 @@ public class Employee {
     @Size(min = 1, max = 50, message = "Name must be between 1 and 50 characters")
     private String fullName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Sex sex;
-
-    public Boolean isResident() {
-        return isResident;
-    }
-
     public void setPersonalInfo(PersonalInfo personalInfo) {
         this.personalInfo = personalInfo;
     }
 
-
-    public enum Sex {
-        FEMALE,
-        MALE,
-
-    }
-
     @Column
-    private String urlImage;
+    private String image;
 
     @Column(nullable = false, unique = true)
     @Pattern(regexp="(^0|[0-9]{10})", message="Phone number must be a 10-digit number")
@@ -57,16 +42,16 @@ public class Employee {
 
     //emergency_contact
     @Column
-    private String name_contactER;
+    private String nameContactER;
 
     @Column
     @Pattern(regexp="(^0|[0-9]{10})", message="Phone number must be a 10-digit number")
-    private String phone_contactER;
+    private String phoneContactER;
 
-    @Transient
+    @Column
     private String positionName;
 
-    @Transient
+    @Column 
     private String departmentName;
 
     @ManyToOne
@@ -87,15 +72,15 @@ public class Employee {
     @JoinColumn(name = "personal_info_id", referencedColumnName = "id")
     private PersonalInfo personalInfo;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "contract_id", referencedColumnName = "id")
-    private Contract contract;
+//    @OneToOne(cascade = CascadeType.ALL)
+//    @JoinColumn(name = "contract_id", referencedColumnName = "id")
+//    private Contract contract;
 
-    @Column
-    private Boolean isResident;
+//    @Column
+//    private Boolean isResident;
 
     public Employee() {
-        this.isDeleted = false;this.isResident = false;
+        this.isDeleted = false;
     }
 
     @PostPersist

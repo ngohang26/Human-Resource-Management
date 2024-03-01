@@ -1,5 +1,8 @@
 package com.hrm.Human.Resource.Management.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hrm.Human.Resource.Management.entity.Department;
 import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.entity.PersonalInfo;
@@ -10,11 +13,11 @@ import com.hrm.Human.Resource.Management.repositories.PersonalInfoRepositories;
 import com.hrm.Human.Resource.Management.repositories.PositionRepositories;
 import com.hrm.Human.Resource.Management.response.EmployeeResponse;
 import com.hrm.Human.Resource.Management.service.EmployeeService;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +35,9 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Autowired
     private DepartmentRepositories departmentRepositories;
+
+    @Autowired
+    private ImageStorageService imageStorageService;
 
     @Override
     public Optional<Employee> searchEmployee(String keyword) {
@@ -61,7 +67,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employeeRepositories.findAll();
     }
 
-//    @Override
+    //    @Override
 //    public ResponseEntity<?> addEmployee(Employee employee) {
 //        Optional<PersonalInfo> existingPersonalInfo = personalInfoRepositories.findByIdentityCardNumber(employee.getPersonalInfo().getIdentityCardNumber());
 //        if (existingPersonalInfo.isPresent()) {
@@ -91,50 +97,123 @@ public class EmployeeServiceImpl implements EmployeeService {
 //    }
 //}
 @Override
-public ResponseEntity<?> addEmployee(Employee employee) {
-    Optional<Employee> existingEmployee = employeeRepositories.findByFullNameContaining(employee.getFullName());
-    if (existingEmployee.isPresent()) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body("The employee already exists.");
-    }
+public ResponseEntity<?> addEmployee(String employeeString, MultipartFile file) {
 
+    System.out.println("Adding employee: " + employeeString);
+    ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new JavaTimeModule());
+
+    Employee employee;
     try {
-        PersonalInfo personalInfo = employee.getPersonalInfo();
-        if (personalInfo == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("PersonalInfo must not be null.");
-        }
-        PersonalInfo savedPersonalInfo = personalInfoRepositories.save(personalInfo);
-        employee.setPersonalInfo(savedPersonalInfo);
-
-        Position position = positionRepositories.findByPositionName(employee.getPositionName());
-        if (position == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Position does not exist.");
-        }
-        employee.setPosition(position);
-
-        Department  department = departmentRepositories.findByDepartmentName(employee.getDepartmentName());
-        if (department == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Department does not exist.");
-        }
-        employee.setPosition(position);
-
-        Employee savedEmployee = employeeRepositories.save(employee);
-
-        return new ResponseEntity<>(savedEmployee, HttpStatus.CREATED);
-    } catch (Exception e) {
-        e.printStackTrace();
-        return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        employee = objectMapper.readValue(employeeString, Employee.class);
+    } catch (JsonProcessingException e) {
+        System.out.println("Error parsing JSON: " + e.getMessage());
+        System.out.println("Invalid JSON: " + employeeString);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid employee data.");
     }
-}
+
+//        try {
+//            employee = objectMapper.readValue(employeeString, Employee.class);
+//        } catch (JsonProcessingException e) {
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid employee data.");
+//        }
+        Optional<Employee> existingEmployee = employeeRepositories.findByFullNameContaining(employee.getFullName());
+        if (existingEmployee.isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("The employee already exists.");
+        }
+
+        try {
+            // Handle file upload
+            if (file != null && !file.isEmpty()) {
+                String fileName = imageStorageService.storeFile(file);
+                employee.setImage(fileName);
+            }
+
+            Position position = positionRepositories.findByPositionName(employee.getPositionName());
+            if (position == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Position does not exist.");
+            }
+            employee.setPosition(position);
+
+            Department  department = departmentRepositories.findByDepartmentName(employee.getDepartmentName());
+            if (department == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Department does not exist.");
+            }
+            employee.setDepartment(department);
+
+            PersonalInfo personalInfo = employee.getPersonalInfo();
+            if (personalInfo == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("PersonalInfo must not be null.");
+            }
+            PersonalInfo savedPersonalInfo = personalInfoRepositories.save(personalInfo);
+            employee.setPersonalInfo(savedPersonalInfo);
+
+            Employee savedEmployee = employeeRepositories.save(employee);
+
+            return new ResponseEntity<>(savedEmployee, HttpStatus.CREATED);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     @Override
-    public Employee updateEmployee(Long id, Employee updatedEmployee) {
-        Employee existingEmployee = employeeRepositories.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Employee not found with id " + id));
+    public ResponseEntity<?> updateEmployee(Long id, String employeeString, MultipartFile file) {
+        Optional<Employee> existingEmployeeOpt = employeeRepositories.findById(id);
+        if (!existingEmployeeOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Employee not found.");
+        }
 
+        Employee existingEmployee = existingEmployeeOpt.get();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+
+        Employee updatedEmployee;
+        try {
+            updatedEmployee = objectMapper.readValue(employeeString, Employee.class);
+        } catch (JsonProcessingException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid employee data.");
+        }
+
+        // Handle file upload
+        if (file != null && !file.isEmpty()) {
+            String fileName = imageStorageService.storeFile(file);
+            existingEmployee.setImage(fileName);
+        }
+
+        // Update specific fields of the existing employee
         existingEmployee.setFullName(updatedEmployee.getFullName());
+        existingEmployee.setPhoneNumber(updatedEmployee.getPhoneNumber());
+        existingEmployee.setWorkEmail(updatedEmployee.getWorkEmail());
+        existingEmployee.setNameContactER(updatedEmployee.getNameContactER());
+        existingEmployee.setPhoneContactER(updatedEmployee.getPhoneContactER());
+//        existingEmployee.setIsDeleted(updatedEmployee.getIsDeleted());
+        existingEmployee.setDepartment(updatedEmployee.getDepartment());
+        existingEmployee.setPosition(updatedEmployee.getPosition());
 
-        return employeeRepositories.save(existingEmployee);
-    }
+        // Update PersonalInfo
+        PersonalInfo existingPersonalInfo = existingEmployee.getPersonalInfo();
+        PersonalInfo updatedPersonalInfo = updatedEmployee.getPersonalInfo();
+        existingPersonalInfo.setBirthPlace(updatedPersonalInfo.getBirthPlace());
+        existingPersonalInfo.setIsResident(updatedPersonalInfo.getIsResident());
+        existingPersonalInfo.setSex(updatedPersonalInfo.getSex());
+        existingPersonalInfo.setBirthDate(updatedPersonalInfo.getBirthDate());
+        existingPersonalInfo.setPersonalEmail(updatedPersonalInfo.getPersonalEmail());
+        existingPersonalInfo.setCertificateLevel(updatedPersonalInfo.getCertificateLevel());
+        existingPersonalInfo.setFieldOfStudy(updatedPersonalInfo.getFieldOfStudy());
+        existingPersonalInfo.setSchool(updatedPersonalInfo.getSchool());
+        existingPersonalInfo.setNationality(updatedPersonalInfo.getNationality());
+
+        try {
+            Employee savedEmployee = employeeRepositories.save(existingEmployee);
+            return new ResponseEntity<>(savedEmployee, HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+}
 
     @Override
     public ResponseEntity<EmployeeResponse> deleteEmployee(Long id) {
@@ -180,5 +259,10 @@ public ResponseEntity<?> addEmployee(Employee employee) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 new EmployeeResponse("failed", "Cannot find employee to delete", "")
         );
+    }
+
+    @Override
+    public boolean existsByIdentityCardNumber(String identityCardNumber) {
+        return employeeRepositories.existsByPersonalInfoIdentityCardNumber(identityCardNumber);
     }
 }

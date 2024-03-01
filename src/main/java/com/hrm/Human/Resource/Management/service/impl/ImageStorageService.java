@@ -15,80 +15,70 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-@Service // day la  1 service
-public class ImageStorageService implements IStorageService {
-    private final Path storageFolder = Paths.get("uploads");  // thuoc tinh tham chieu den upload image
-    // constructor
+@Service
+public class ImageStorageService implements IStorageService{
+    private final Path storageFolder = Paths.get("uploads");
     public ImageStorageService() {
         try {
             Files.createDirectories(storageFolder);
-        } catch (IOException exception) {
+        }catch (IOException exception) {
             throw new RuntimeException("Cannot initialize storage", exception);
         }
     }
-    private boolean isAllowFile(MultipartFile file) {
-        // let install FileNameUtils
+    private boolean isImageFile(MultipartFile file) {
         String fileExtension = FilenameUtils.getExtension(file.getOriginalFilename());
-        assert fileExtension != null;
-        return Arrays.asList(new String[] {"png", "jpeg", "jpg", "jpe", "bmp", "pdf", "docx", "pptx"})
-                .contains(fileExtension.trim().toLowerCase()); // kiem tra duoi
-    }
-
-    private float getMaxFileSize(String fileExtension) {
-        return switch (fileExtension.trim().toLowerCase()) {
-            case "pdf" -> 10.0f;
-            case "docx", "pptx" -> 15.0f;
-            default -> 5.0f;
-        };
+        return Arrays.asList(new String[] {"png","jpg","jpeg", "bmp"})
+                .contains(fileExtension.trim().toLowerCase());
     }
     @Override
     public String storeFile(MultipartFile file) {
+        System.out.println("Storing file: " + file.getOriginalFilename());
+
         try {
             if (file.isEmpty()) {
                 throw new RuntimeException("Failed to store empty file.");
             }
-
-            String fileExtension = FilenameUtils.getExtension(file.getOriginalFilename());
-            // check file is image
-            if (!isAllowFile(file)) {
-                throw new RuntimeException("You can only upload certain types of file.");
+            if(!isImageFile(file)) {
+                throw new RuntimeException("You can only upload image file");
             }
-            assert fileExtension != null;
-            float maxFileSize = getMaxFileSize(fileExtension);
             float fileSizeInMegabytes = file.getSize() / 1_000_000.0f;
-            if (fileSizeInMegabytes > maxFileSize) {
-                throw new RuntimeException("File must be <= " + maxFileSize + "MB");
+            if(fileSizeInMegabytes > 5.0f) {
+                throw new RuntimeException("File must be <= 5Mb");
             }
-
-            // file must be rename ? why? khi upload 2 file co ten giong nhau 1 file cu xoa be ghi de roi xoa mat | quan trong
-            String generatedFileName = UUID.randomUUID().toString() .replace("-", "");
-            generatedFileName = generatedFileName + "." + fileExtension;
+            String fileExtension = FilenameUtils.getExtension(file.getOriginalFilename());
+            String generatedFileName = UUID.randomUUID().toString().replace("-", "");
+            generatedFileName = generatedFileName+"."+fileExtension;
             Path destinationFilePath = this.storageFolder.resolve(
-                    Paths.get(generatedFileName)).normalize().toAbsolutePath();
+                            Paths.get(generatedFileName))
+                    .normalize().toAbsolutePath();
             if (!destinationFilePath.getParent().equals(this.storageFolder.toAbsolutePath())) {
-                throw new RuntimeException("Can not store file outside current directory.");
-            }
-            try (InputStream inputStream = file.getInputStream()) {
-                Files.copy(inputStream, destinationFilePath, StandardCopyOption.REPLACE_EXISTING);
-            }
-            return generatedFileName;
-        }
-        catch (IOException exception) {
-            throw new RuntimeException("Failed to store files.", exception);
-        }
+        throw new RuntimeException(
+                "Cannot store file outside current directory.");
     }
+            try (InputStream inputStream = file.getInputStream()) {
+        Files.copy(inputStream, destinationFilePath, StandardCopyOption.REPLACE_EXISTING);
+    }
+            return generatedFileName;
+}
+        catch (IOException exception) {
+                throw new RuntimeException("Failed to store file.", exception);
+                }
+                }
 
     @Override
     public Stream<Path> loadAll() {
-        try{
+        try {
+            //list all files in storageFolder
+            //How to fix this ?
             return Files.walk(this.storageFolder, 1)
-                    .filter(path -> !path.equals(this.storageFolder))
+                    .filter(path -> !path.equals(this.storageFolder) && !path.toString().contains("._"))
                     .map(this.storageFolder::relativize);
-        } catch (IOException exception) {
-            throw new RuntimeException("Failed to loaf stores files", exception);
         }
-    }
+        catch (IOException e) {
+            throw new RuntimeException("Failed to load stored files", e);
+        }
 
+    }
 
     @Override
     public byte[] readFileContent(String fileName) {
@@ -96,12 +86,12 @@ public class ImageStorageService implements IStorageService {
             Path file = storageFolder.resolve(fileName);
             Resource resource = new UrlResource(file.toUri());
             if (resource.exists() || resource.isReadable()) {
-                return StreamUtils.copyToByteArray(resource.getInputStream());
+                byte[] bytes = StreamUtils.copyToByteArray(resource.getInputStream());
+                return bytes;
             }
             else {
                 throw new RuntimeException(
-                        "Could not read file: " + fileName
-                );
+                        "Could not read file: " + fileName);
             }
         }
         catch (IOException exception) {
@@ -113,6 +103,7 @@ public class ImageStorageService implements IStorageService {
     public void deleteAllFiles() {
 
     }
+
 
     @Override
     public String getContentType(String fileName) throws IOException {

@@ -1,19 +1,18 @@
-package com.hrm.Human.Resource.Management.dto;
-
-import lombok.Getter;
-import lombok.Setter;
-
-import java.time.LocalDate;
-@Getter
-@Setter
-public class PersonalInfoDTO {
-    private Long id;
-    private String nationality;
-    private String birthPlace;
-    private String residence;
-    private LocalDate birthDate;
-    private String identityCardNumber;
-    private String personalEmail;
-    private String[] certificates;
-
-}
+//package com.hrm.Human.Resource.Management.dto;
+//
+//import jakarta.persistence.Entity;
+//import lombok.Data;
+//
+//import java.time.LocalDate;
+//
+//@Data
+//@Entity
+//public class PersonalInfoDTO {
+//    private Long id;
+//    private String birthPlace;
+//    private String identityCardNumber;
+//    private LocalDate birthDate;
+//    private String sex;
+//    private String school;
+//    private String nationality;
+//}

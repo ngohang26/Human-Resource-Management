@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -44,14 +45,17 @@ public class EmployeeController {
     }
 
 
-    @PostMapping("/addEmployee")
-    public ResponseEntity<?> addEmployee(@RequestBody Employee employee) {
-        return employeeService.addEmployee(employee);
+    @PostMapping(path = "addEmployee")
+    public ResponseEntity<?> createEmployee(@RequestPart("employee") String employeeString, @RequestPart("file") MultipartFile file) {
+        System.out.println("employeeString: " + employeeString);
+        System.out.println("file: " + file.getOriginalFilename());
+
+        return employeeService.addEmployee(employeeString, file);
     }
 
-    @PutMapping("/#/{id}")
-    public Employee updateEmployee(@PathVariable Long id, @RequestBody Employee employeeDetails) {
-        return employeeService.updateEmployee(id, employeeDetails);
+    @PutMapping(path = "updateEmployee/{id}")
+    public ResponseEntity<?> updateEmployee(@PathVariable Long id, @RequestPart("employee") String employeeString, @RequestPart("file") MultipartFile file) {
+        return employeeService.updateEmployee(id, employeeString, file);
     }
 
     @DeleteMapping("/{id}")
@@ -73,4 +77,11 @@ public class EmployeeController {
     public Optional<Employee> searchEmployees(@RequestParam String keyword) {
         return employeeService.searchEmployee(keyword);
     }
+
+    @GetMapping("/exists/{identityCardNumber}")
+    public ResponseEntity<Boolean> checkIdentityCardNumberExists(@PathVariable String identityCardNumber) {
+        boolean exists = employeeService.existsByIdentityCardNumber(identityCardNumber);
+        return new ResponseEntity<>(exists, HttpStatus.OK);
+    }
+
 }

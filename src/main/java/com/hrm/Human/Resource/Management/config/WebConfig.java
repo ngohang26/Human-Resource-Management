@@ -1,5 +1,4 @@
 package com.hrm.Human.Resource.Management.config;
-import com.hrm.Human.Resource.Management.dto.PersonalInfoDTO;
 import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.entity.PersonalInfo;
 import org.modelmapper.ModelMapper;
