@@ -21,7 +21,10 @@ public class Employee {
     @Column(unique = true)
     private String employeeCode;
 
+    @Column
+    private String codeName;
     @Column(nullable = false)
+
     @Size(min = 1, max = 50, message = "Name must be between 1 and 50 characters")
     private String fullName;
 
@@ -84,11 +87,12 @@ public class Employee {
     }
 
     @PostPersist
-    public void generateEmployeeCode() {
+    public void generateCodeNameAndEmployeeCode() {
         LocalDate date = LocalDate.now();
         int year = date.getYear() % 100;
         int month = date.getMonthValue();
         this.employeeCode = String.format("%02d%02d%03d", year, month, id);
+        this.codeName = this.employeeCode + " - " + this.fullName;
     }
 
     public void setIsDeleted(boolean b) {}

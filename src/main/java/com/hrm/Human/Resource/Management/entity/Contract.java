@@ -30,16 +30,9 @@ public class Contract {
     @Column(nullable = false)
     private int numberOfSignatures;
 
-    @Column(nullable = false)
-    private double coefficientsSalary; // he so
-
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "employee_code", referencedColumnName = "employeeCode")
     private Employee employee;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SalaryType salaryType;
 
     public Temporal getStartDate() {
         return startDate;
@@ -48,13 +41,7 @@ public class Contract {
     public Temporal getEndDate() {
         return endDate;
     }
-    public enum SalaryType {
-        FIXED_SALARY,
-        HOURLY_SALARY
-    }
 
-    @Column(nullable = false)
-    private Double hourlyWage;
 
     @Column(nullable = false)
     private Double monthlySalary;

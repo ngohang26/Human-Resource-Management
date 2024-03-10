@@ -21,10 +21,10 @@ public class RecruitmentProcess {
         private RecruitmentStatus status;
 
         public enum RecruitmentStatus {
+                REFUSE,
                 NEW,
                 INITIAL_REVIEW,
                 FIRST_INTERVIEW,
-                SECOND_INTERVIEW,
                 OFFER_MADE,
                 CONTRACT_SIGNED
         }

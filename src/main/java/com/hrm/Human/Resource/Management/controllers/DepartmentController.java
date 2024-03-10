@@ -38,9 +38,9 @@ public class DepartmentController {
 //        }
 
     @PostMapping("/addDepartment")
-    public ResponseEntity<?> addEmployee(@RequestBody Department department, @RequestParam String employeeCode) {
+    public ResponseEntity<?> addEmployee(@RequestBody Department department, @RequestParam String codeName) {
         try {
-            Employee manager = employeeRepositories.findByEmployeeCode(employeeCode);
+            Employee manager = employeeRepositories.findByCodeName(codeName);
             if (manager == null) {
                 return new ResponseEntity<>("Employee not found", HttpStatus.NOT_FOUND);
             }

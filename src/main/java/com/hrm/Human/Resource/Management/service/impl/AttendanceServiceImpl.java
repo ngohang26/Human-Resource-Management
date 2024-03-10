@@ -40,12 +40,12 @@ public class AttendanceServiceImpl implements AttendanceService {
         LocalDate date = faker.date().between(start, end).toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 
         LocalTime timeIn = LocalTime.of(
-                faker.number().numberBetween(8, 17), // Giờ ngẫu nhiên từ 8 đến 17
+                faker.number().numberBetween(7, 8), // Giờ ngẫu nhiên từ 8 đến 17
                 0
         ); // Giữ phút bằng 0
 
         LocalTime timeOut = LocalTime.of(
-                faker.number().numberBetween(12, 18), // Giờ ngẫu nhiên từ 12 đến 18
+                faker.number().numberBetween(17, 22), // Giờ ngẫu nhiên từ 12 đến 18
                 0
         ); // Giữ phút bằng 0
 

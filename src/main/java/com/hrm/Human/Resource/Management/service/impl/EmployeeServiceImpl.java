@@ -164,56 +164,72 @@ public ResponseEntity<?> addEmployee(String employeeString, MultipartFile file) 
         if (!existingEmployeeOpt.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Employee not found.");
         }
-
         Employee existingEmployee = existingEmployeeOpt.get();
-
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
-
         Employee updatedEmployee;
         try {
             updatedEmployee = objectMapper.readValue(employeeString, Employee.class);
         } catch (JsonProcessingException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid employee data.");
         }
-
-        // Handle file upload
         if (file != null && !file.isEmpty()) {
             String fileName = imageStorageService.storeFile(file);
             existingEmployee.setImage(fileName);
         }
-
-        // Update specific fields of the existing employee
         existingEmployee.setFullName(updatedEmployee.getFullName());
         existingEmployee.setPhoneNumber(updatedEmployee.getPhoneNumber());
         existingEmployee.setWorkEmail(updatedEmployee.getWorkEmail());
         existingEmployee.setNameContactER(updatedEmployee.getNameContactER());
         existingEmployee.setPhoneContactER(updatedEmployee.getPhoneContactER());
-//        existingEmployee.setIsDeleted(updatedEmployee.getIsDeleted());
-        existingEmployee.setDepartment(updatedEmployee.getDepartment());
-        existingEmployee.setPosition(updatedEmployee.getPosition());
+        // existingEmployee.setIsDeleted(updatedEmployee.getIsDeleted());
+
+        // Find the updated Department and Position in the database
+        Department updatedDepartment = departmentRepositories.findByDepartmentName(updatedEmployee.getDepartmentName());
+        if (updatedDepartment == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Department does not exist.");
+        }
+        Position updatedPosition = positionRepositories.findByPositionName(updatedEmployee.getPositionName());
+        if (updatedPosition == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Position does not exist.");
+        }
+
+        existingEmployee.setDepartment(updatedDepartment);
+        existingEmployee.setPosition(updatedPosition);
+        existingEmployee.setDepartmentName(updatedDepartment.getDepartmentName());
+        existingEmployee.setPositionName(updatedPosition.getPositionName());
 
         // Update PersonalInfo
         PersonalInfo existingPersonalInfo = existingEmployee.getPersonalInfo();
         PersonalInfo updatedPersonalInfo = updatedEmployee.getPersonalInfo();
+
         existingPersonalInfo.setBirthPlace(updatedPersonalInfo.getBirthPlace());
         existingPersonalInfo.setIsResident(updatedPersonalInfo.getIsResident());
         existingPersonalInfo.setSex(updatedPersonalInfo.getSex());
+        existingPersonalInfo.setIdentityCardNumber(updatedPersonalInfo.getIdentityCardNumber());
+
         existingPersonalInfo.setBirthDate(updatedPersonalInfo.getBirthDate());
         existingPersonalInfo.setPersonalEmail(updatedPersonalInfo.getPersonalEmail());
         existingPersonalInfo.setCertificateLevel(updatedPersonalInfo.getCertificateLevel());
         existingPersonalInfo.setFieldOfStudy(updatedPersonalInfo.getFieldOfStudy());
         existingPersonalInfo.setSchool(updatedPersonalInfo.getSchool());
         existingPersonalInfo.setNationality(updatedPersonalInfo.getNationality());
-
         try {
+            // Handle file upload
+            if (file != null && !file.isEmpty()) {
+                String fileName = imageStorageService.storeFile(file);
+                existingEmployee.setImage(fileName);
+            }
+
             Employee savedEmployee = employeeRepositories.save(existingEmployee);
-            return new ResponseEntity<>(savedEmployee, HttpStatus.OK);
+
+            return new ResponseEntity<>(savedEmployee, HttpStatus.CREATED);
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-}
+    }
+
 
     @Override
     public ResponseEntity<EmployeeResponse> deleteEmployee(Long id) {

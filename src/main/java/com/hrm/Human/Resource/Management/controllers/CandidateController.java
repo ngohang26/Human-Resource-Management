@@ -1,49 +1,40 @@
 package com.hrm.Human.Resource.Management.controllers;
 
 import com.hrm.Human.Resource.Management.entity.Candidate;
-import com.hrm.Human.Resource.Management.response.CandidateResponse;
+import com.hrm.Human.Resource.Management.entity.JobOffer;
 import com.hrm.Human.Resource.Management.service.impl.CandidateService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/candidates")
+@RequestMapping("/candidates")
 public class CandidateController {
+    private final CandidateService candidateService;
 
-
-    @Autowired
-    private CandidateService candidateService;
-
-    @GetMapping(path = "getAllCandidates")
-    public List<Candidate> getAllCandidates() {
-        return candidateService.getCandidates();
+    public CandidateController(CandidateService candidateService) {
+        this.candidateService = candidateService;
     }
 
-    @GetMapping(path = "/{id}")
-    public ResponseEntity<Candidate> getCandidateById(@PathVariable Long id) {
-        Optional<Candidate> candidate = candidateService.findById(id);
-        return candidate.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+    @PostMapping("/addCandidate")
+    public Candidate createCandidate(@RequestBody Candidate candidate) {
+        return candidateService.createCandidate(candidate);
     }
 
-    @PostMapping("/addPosition")
-    public ResponseEntity<?> addCandidate(@RequestBody Candidate candidate) {
-        return candidateService.addCandidate(candidate);
+    @PostMapping("/{id}/updateStatus")
+    public Candidate updateCandidateStatus(@PathVariable Long id, @RequestBody Candidate.CandidateStatus newStatus) {
+        return candidateService.updateCandidateStatus(id, newStatus);
     }
 
-    @PutMapping("/#/{id}")
-    public Candidate updateCandidate(@PathVariable Long id, @RequestBody Candidate candidateDetails) {
-        return candidateService.updateCandidate(id, candidateDetails);
+    @PostMapping("/{id}/setInterviewTime")
+    public Candidate setInterviewTime(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        return candidateService.setInterviewTime(id, payload);
     }
 
+    @PostMapping("/{id}/makeOffer")
+    public Candidate makeOffer(@PathVariable Long id, @RequestBody JobOffer jobOffer) {
+        return candidateService.makeOffer(id, jobOffer);
 
-    @DeleteMapping("/hardDelete/{id}")
-    public ResponseEntity<CandidateResponse> hardDeleteCandidate(@PathVariable Long id) {
-        return candidateService.hardDeleteCandidate(id);
     }
 }
-

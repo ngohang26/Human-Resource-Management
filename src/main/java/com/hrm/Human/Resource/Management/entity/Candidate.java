@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -22,8 +22,28 @@ public class Candidate {
     @Column
     private String email;
 
-    @ManyToMany(mappedBy = "candidates")
-    private List<RecruitmentProcess> recruitmentProcesses = new ArrayList<>();
+    @Column
+    private LocalDateTime interviewTime;
+
+    @ManyToOne
+    private JobPosition jobPosition;
+
+    public enum CandidateStatus {
+        NEW,
+        REFUSE,
+        INITIAL_REVIEW,
+        FIRST_INTERVIEW,
+        SECOND_INTERVIEW,
+        OFFER_MADE,
+        CONTRACT_SIGNED
+    }
+
+    @Enumerated(EnumType.STRING)
+    private CandidateStatus currentStatus;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "job_offer_id", referencedColumnName = "id")
+    private JobOffer jobOffer;
 
     @ManyToMany
     @JoinTable(

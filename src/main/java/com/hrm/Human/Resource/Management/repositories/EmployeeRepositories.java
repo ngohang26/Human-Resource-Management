@@ -21,5 +21,7 @@ public interface EmployeeRepositories extends JpaRepository<Employee, Long> {
 
     boolean existsByPersonalInfoIdentityCardNumber(String identityCardNumber);
 
+    Employee findByCodeName(String codeName);
+
 //    List<Employee> findAll();
 }
