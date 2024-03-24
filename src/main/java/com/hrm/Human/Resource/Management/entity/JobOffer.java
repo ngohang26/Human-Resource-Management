@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.Temporal;
 @Getter
@@ -25,8 +26,5 @@ public class JobOffer {
     private String noteContract;
 
     @Column(nullable = false)
-    private Double monthlySalary;
-
-//    @OneToOne(mappedBy = "jobOffer")
-//    private Candidate candidate;
+    private BigDecimal monthlySalary;
 }

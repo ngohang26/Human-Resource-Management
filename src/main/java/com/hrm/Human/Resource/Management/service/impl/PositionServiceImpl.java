@@ -49,7 +49,7 @@ public class PositionServiceImpl implements PositionService {
                 .orElseThrow(() -> new EntityNotFoundException("Position not found with id " + id));
 
         existingPosition.setPositionName(updatedPosition.getPositionName());
-
+        existingPosition.setJobSummary(updatedPosition.getJobSummary());
         return positionRepositories.save(existingPosition);
     }
 

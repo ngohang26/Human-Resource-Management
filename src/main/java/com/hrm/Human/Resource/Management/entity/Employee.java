@@ -8,6 +8,8 @@ import lombok.Setter;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -64,9 +66,6 @@ public class Employee {
     @ManyToOne
     @JoinColumn(name = "position_id")
     private Position position;
-//
-//    @ManyToOne
-//    private Employee manager;
 
     @Column
     private Boolean isDeleted;
@@ -75,12 +74,16 @@ public class Employee {
     @JoinColumn(name = "personal_info_id", referencedColumnName = "id")
     private PersonalInfo personalInfo;
 
-//    @OneToOne(cascade = CascadeType.ALL)
-//    @JoinColumn(name = "contract_id", referencedColumnName = "id")
-//    private Contract contract;
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "contract_id", referencedColumnName = "id")
+    private Contract contract;
 
-//    @Column
-//    private Boolean isResident;
+
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Skill> skills = new ArrayList<>();
+
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Experience> experiences = new ArrayList<>();
 
     public Employee() {
         this.isDeleted = false;
@@ -96,15 +99,6 @@ public class Employee {
     }
 
     public void setIsDeleted(boolean b) {}
-
-
-//    public String getPositionName() {
-//        return this.position.getPositionName();
-//    }
-//
-//    public String getDepartmentName() {
-//        return this.department.getDepartmentName();
-//    }
 
 }
 

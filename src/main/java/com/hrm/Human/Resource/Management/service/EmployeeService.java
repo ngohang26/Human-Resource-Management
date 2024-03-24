@@ -36,5 +36,7 @@ public interface EmployeeService {
 
     boolean existsByIdentityCardNumber(String identityCardNumber);
 
+    Optional<Employee> getEmployeeById(Long id);
+
 //    ResponseEntity<?> updateEmployee(Long id, String employeeString, MultipartFile file);
 }

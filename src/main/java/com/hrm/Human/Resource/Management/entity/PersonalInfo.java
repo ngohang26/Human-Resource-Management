@@ -51,7 +51,7 @@ public class PersonalInfo {
     @Column
     private String fieldOfStudy;
 
-    @Column(nullable = false)
+    @Column
     private String school;
 
     public Boolean isResident() {

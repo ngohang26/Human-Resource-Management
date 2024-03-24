@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -55,6 +56,11 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    public Optional<Employee> getEmployeeById(Long id) {
+        return employeeRepositories.findById(id);
+    }
+
+    @Override
     public Employee save(Employee employee) {
         return employeeRepositories.save(employee);
     }
@@ -67,36 +73,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employeeRepositories.findAll();
     }
 
-    //    @Override
-//    public ResponseEntity<?> addEmployee(Employee employee) {
-//        Optional<PersonalInfo> existingPersonalInfo = personalInfoRepositories.findByIdentityCardNumber(employee.getPersonalInfo().getIdentityCardNumber());
-//        if (existingPersonalInfo.isPresent()) {
-//            return ResponseEntity.status(HttpStatus.CONFLICT).body("The employee already exists.");
-//        }
-//
-//        try {
-//            Employee savedEmployee = employeeRepositories.save(employee);
-//            return new ResponseEntity<>(savedEmployee, HttpStatus.CREATED);
-//        } catch (Exception e) {
-//            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-//        }
-//    }
-//@Override
-//public ResponseEntity<?> addEmployee(Employee employee) {
-//    Optional<Employee> existingEmployee = employeeRepositories.findByFullNameContaining(employee.getFullName());
-//    if (existingEmployee.isPresent()) {
-//        return ResponseEntity.status(HttpStatus.CONFLICT).body("The employee already exists.");
-//    }
-//
-//    try {
-//        Employee savedEmployee = employeeRepositories.save(employee);
-//        return new ResponseEntity<>(savedEmployee, HttpStatus.CREATED);
-//    } catch (Exception e) {
-//        e.printStackTrace();
-//        return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-//    }
-//}
 @Override
+@Transactional
 public ResponseEntity<?> addEmployee(String employeeString, MultipartFile file) {
 
     System.out.println("Adding employee: " + employeeString);
@@ -112,16 +90,10 @@ public ResponseEntity<?> addEmployee(String employeeString, MultipartFile file) 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid employee data.");
     }
 
-//        try {
-//            employee = objectMapper.readValue(employeeString, Employee.class);
-//        } catch (JsonProcessingException e) {
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid employee data.");
-//        }
-        Optional<Employee> existingEmployee = employeeRepositories.findByFullNameContaining(employee.getFullName());
-        if (existingEmployee.isPresent()) {
+        Optional<PersonalInfo> existingPersonalInfo = personalInfoRepositories.findByIdentityCardNumber(employee.getPersonalInfo().getIdentityCardNumber());
+        if (existingPersonalInfo.isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("The employee already exists.");
         }
-
         try {
             // Handle file upload
             if (file != null && !file.isEmpty()) {
@@ -156,7 +128,6 @@ public ResponseEntity<?> addEmployee(String employeeString, MultipartFile file) 
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
     @Override
     public ResponseEntity<?> updateEmployee(Long id, String employeeString, MultipartFile file) {
@@ -215,7 +186,6 @@ public ResponseEntity<?> addEmployee(String employeeString, MultipartFile file) 
         existingPersonalInfo.setSchool(updatedPersonalInfo.getSchool());
         existingPersonalInfo.setNationality(updatedPersonalInfo.getNationality());
         try {
-            // Handle file upload
             if (file != null && !file.isEmpty()) {
                 String fileName = imageStorageService.storeFile(file);
                 existingEmployee.setImage(fileName);

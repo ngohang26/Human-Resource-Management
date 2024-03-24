@@ -1,8 +1,14 @@
 package com.hrm.Human.Resource.Management.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
 
 @Entity
+@Getter
+@Setter
 @Table(name = "allowances")
 
 // tro cap
@@ -15,9 +21,9 @@ public class Allowance {
     private String allowanceName;
 
     @Column
-    private double allowanceAmount;
+    private BigDecimal allowanceAmount;
 
-    public double getAllowanceAmount() {
-        return allowanceAmount;
-    }
+//    public BigDecimal getAllowanceAmount() {
+//        return allowanceAmount;
+//    }
 }

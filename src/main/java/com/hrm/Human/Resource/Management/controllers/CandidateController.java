@@ -5,7 +5,7 @@ import com.hrm.Human.Resource.Management.entity.JobOffer;
 import com.hrm.Human.Resource.Management.service.impl.CandidateService;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -37,4 +37,22 @@ public class CandidateController {
         return candidateService.makeOffer(id, jobOffer);
 
     }
+
+    @GetMapping("/{id}")
+    public Candidate getCandidate(@PathVariable Long id) {
+        return candidateService.getCandidateById(id);
+    }
+
+    @GetMapping(path = "/getAllCandidates")
+    public List<Candidate> getAllCandidate() {
+        return candidateService.getCandidate();
+    }
+
+    @PutMapping("/{id}")
+    public Candidate updateCandidate(@PathVariable Long id, @RequestBody Candidate candidateDetails) {
+        return candidateService.updateCandidateInfo(id, candidateDetails);
+    }
+
+
+
 }

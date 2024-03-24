@@ -1,16 +1,17 @@
 package com.hrm.Human.Resource.Management.service.impl;
 
-import com.hrm.Human.Resource.Management.entity.Candidate;
-import com.hrm.Human.Resource.Management.entity.JobOffer;
-import com.hrm.Human.Resource.Management.entity.JobPosition;
+import com.hrm.Human.Resource.Management.entity.*;
 import com.hrm.Human.Resource.Management.repositories.CandidateRepositories;
+import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
 import com.hrm.Human.Resource.Management.repositories.JobOfferRepositories;
 import com.hrm.Human.Resource.Management.repositories.JobPositionRepositories;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -23,6 +24,9 @@ public class CandidateService {
     private JobPositionRepositories jobPositionRepositories;
 
     @Autowired
+    private EmployeeRepositories employeeRepositories;
+
+    @Autowired
     private JobOfferRepositories jobOfferRepositories;
     @Autowired
     private final EmailService emailService;
@@ -30,7 +34,6 @@ public class CandidateService {
         this.candidateRepositories = candidateRepositories;
         this.emailService = emailService;
     }
-
 
     public Candidate createCandidate(Candidate candidate) {
         Object jobPosition = jobPositionRepositories.findByJobPositionName(candidate.getJobPosition().getJobPositionName())
@@ -60,66 +63,22 @@ public class CandidateService {
 
         emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: “"
                 + candidate.getJobPosition().getJobPositionName() + "”", htmlContent);
-
-
-
-
         return savedCandidate;
-    }
-
-    public Candidate initialReview(Long id, boolean isSuitable) {
-        Candidate candidate = getCandidate(id);
-        if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.NEW) {
-            if (isSuitable) {
-                candidate.setCurrentStatus(Candidate.CandidateStatus.INITIAL_REVIEW);
-                emailService.sendEmail(candidate.getEmail(), "","Hồ sơ của bạn đã được xem xét và chúng tôi sẽ liên hệ với bạn sớm.");
-            } else {
-                candidate.setCurrentStatus(Candidate.CandidateStatus.REFUSE);
-                emailService.sendEmail(candidate.getEmail(), "","Rất tiếc, hồ sơ của bạn không phù hợp với yêu cầu của chúng tôi.");
-            }
-            return candidateRepositories.save(candidate);
-        }
-        return null;
-    }
-
-    public Candidate firstInterview(Long id, LocalDateTime interviewTime, String location, boolean isPassed) {
-        Candidate candidate = getCandidate(id);
-        if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.INITIAL_REVIEW) {
-            if (isPassed) {
-                candidate.setCurrentStatus(Candidate.CandidateStatus.FIRST_INTERVIEW);
-                emailService.sendEmail(candidate.getEmail(),"", "Bạn đã qua vòng xem xét hồ sơ. Chúng tôi đã lên lịch phỏng vấn cho bạn vào " + interviewTime + " tại " + location);
-            } else {
-                candidate.setCurrentStatus(Candidate.CandidateStatus.REFUSE);
-                emailService.sendEmail(candidate.getEmail(),"", "Rất tiếc, bạn không qua được vòng xem xét hồ sơ.");
-            }
-            return candidateRepositories.save(candidate);
-        }
-        return null;
     }
 
     private Candidate getCandidate(Long id) {
         return candidateRepositories.findById(id).orElse(null);
     }
 
-    public Candidate offerMade(Long id, String offerDetails) {
-        Candidate candidate = getCandidate(id);
-        if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.FIRST_INTERVIEW) {
-            candidate.setCurrentStatus(Candidate.CandidateStatus.OFFER_MADE);
-            emailService.sendEmail(candidate.getEmail(), "","Chúc mừng, bạn đã qua vòng phỏng vấn thứ hai. Chúng tôi muốn gửi đến bạn đề xuất sau: " + offerDetails);
-            return candidateRepositories.save(candidate);
-        }
-        return null;
-    }
-
-    public Candidate contractSigned(Long id) {
-        Candidate candidate = getCandidate(id);
-        if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.OFFER_MADE) {
-            candidate.setCurrentStatus(Candidate.CandidateStatus.CONTRACT_SIGNED);
-            emailService.sendEmail(candidate.getEmail(),"", "Chúc mừng, bạn đã ký hợp đồng với chúng tôi. Chúng tôi rất mong chờ sự hợp tác với bạn!");
-            return candidateRepositories.save(candidate);
-        }
-        return null;
-    }
+//    public Candidate offerMade(Long id, String offerDetails) {
+//        Candidate candidate = getCandidate(id);
+//        if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.FIRST_INTERVIEW) {
+//            candidate.setCurrentStatus(Candidate.CandidateStatus.OFFER_MADE);
+//            emailService.sendEmail(candidate.getEmail(), "","Chúc mừng, bạn đã qua vòng phỏng vấn thứ hai. Chúng tôi muốn gửi đến bạn đề xuất sau: " + offerDetails);
+//            return candidateRepositories.save(candidate);
+//        }
+//        return null;
+//    }
 
     public Candidate updateCandidateStatus(Long id, Candidate.CandidateStatus newStatus) {
         Candidate candidate = getCandidate(id);
@@ -128,7 +87,7 @@ public class CandidateService {
                 case INITIAL_REVIEW:
                     if (candidate.getCurrentStatus() == Candidate.CandidateStatus.NEW) {
                         candidate.setCurrentStatus(Candidate.CandidateStatus.INITIAL_REVIEW);
-                        emailService.sendEmail(candidate.getEmail(), "", "Hồ sơ của bạn đã được xem xét và chúng tôi sẽ liên hệ với bạn sớm.");
+//                        emailService.sendEmail(candidate.getEmail(), "", "Hồ sơ của bạn đã được xem xét và chúng tôi sẽ liên hệ với bạn sớm.");
                     }
                     break;
                 case FIRST_INTERVIEW:
@@ -154,12 +113,15 @@ public class CandidateService {
                 case CONTRACT_SIGNED:
                     if (candidate.getCurrentStatus() == Candidate.CandidateStatus.OFFER_MADE) {
                         candidate.setCurrentStatus(Candidate.CandidateStatus.CONTRACT_SIGNED);
-                        emailService.sendEmail(candidate.getEmail(), "", "Chúc mừng! Bạn đã ký hợp đồng và trở thành một phần của đội ngũ của chúng tôi.");
+                        convertCandidateToEmployee(candidate.getId());
+                        emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
+                                + candidate.getJobPosition().getJobPositionName(), "Chúc mừng! Bạn đã ký hợp đồng và trở thành một phần của đội ngũ của chúng tôi.");
                     }
                     break;
                 case REFUSE:
                     candidate.setCurrentStatus(Candidate.CandidateStatus.REFUSE);
-                    emailService.sendEmail(candidate.getEmail(), "", "Rất tiếc, hồ sơ của bạn không phù hợp với yêu cầu của chúng tôi.");
+                    emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
+                            + candidate.getJobPosition().getJobPositionName(), "Rất tiếc, hồ sơ của bạn không phù hợp với yêu cầu của chúng tôi.");
                     break;
                 default:
                     throw new IllegalArgumentException("Invalid status");
@@ -176,8 +138,26 @@ public class CandidateService {
             LocalDateTime dateTime = LocalDateTime.parse(payload.get("interviewTime"), formatter);
             candidate.setInterviewTime(dateTime);
             candidate.setCurrentStatus(Candidate.CandidateStatus.FIRST_INTERVIEW);
-            String interviewSchedule = "Lịch phỏng vấn đầu tiên của bạn là: " + dateTime.toString();
-            emailService.sendEmail(candidate.getEmail(), "", "Bạn đã qua vòng xem xét hồ sơ. Chúng tôi sẽ liên hệ với bạn để sắp xếp lịch phỏng vấn đầu tiên. " + interviewSchedule);
+            String interviewSchedule = "<p>Xin chào, \n </p>"+  "\n"
+                    + "<p>Cảm ơn bạn đã nộp hồ sơ ứng tuyển vào vị trí <b style=\"color:#9a6c8e\">“"
+                    + candidate.getJobPosition().getJobPositionName()
+                    + "”</b> tại <b>Tolo</b></p>" + "\n"
+                    + "<p>Chúng tôi rất ấn tượng với kinh nghiệm và kỹ năng của bạn, và chúng tôi muốn mời bạn tham gia một cuộc phỏng vấn.</p>"
+                    + "<p>Chúng tôi muốn đặt lịch phỏng vấn vào</p>" + dateTime.toString()
+                    + "<p>Phỏng vấn sẽ diễn ra tại tại <b>Tòa nhà ACB tại 12 Nguyen Trai, Hanoi</b></p>"
+                    + "<p>Vui lòng xác nhận xem bạn có thể tham gia vào thời gian này không. Nếu không, hãy cho chúng tôi biết thời gian khác phù hợp với bạn trong tuần này.\n" +
+                    "\n" +
+                    "Chúng tôi mong muốn có cơ hội gặp bạn và tìm hiểu thêm về kinh nghiệm và mục tiêu nghề nghiệp của bạn.</p>"
+                    + "<hr style=\"border: none; border-top: 1px solid #ddd;\">"
+                    + "<b style=\"color:#9a6c8e\">Người liên hệ của bạn:</b>" + "\n"
+                    + "<b>TOLO</b>"
+                    + "<p>Email: ngohangvn01@gmail.com </p>"
+                    + "<hr style=\"border: none; border-top: 1px solid #ddd;\">"
+                    + "<p><b>Trân trọng</b></p>"
+                    + "<b>Tolo</b><p>Việt Nam</p>";
+
+            emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
+                    + candidate.getJobPosition().getJobPositionName(), interviewSchedule);
             return candidateRepositories.save(candidate);
         }
         return null;
@@ -189,10 +169,75 @@ public class CandidateService {
             jobOffer = jobOfferRepositories.save(jobOffer); // Lưu JobOffer vào cơ sở dữ liệu
             candidate.setJobOffer(jobOffer); // Gán JobOffer cho ứng viên
             candidate.setCurrentStatus(Candidate.CandidateStatus.OFFER_MADE);
-            String offerDetails = "Lương cơ bản: " + jobOffer.getMonthlySalary() + "\n" +
-                    "Ngày bắt đầu: " + jobOffer.getStartDate() + "\n" +
-                    "tới ngày: " + jobOffer.getEndDate().toString();
-            emailService.sendEmail(candidate.getEmail(), "", "Bạn đã qua vòng phỏng vấn thứ hai. Chúng tôi sẽ gửi cho bạn một đề nghị công việc với các chi tiết sau:\n" + offerDetails);
+            String offerDetails =
+                    "<p>Xin chào, \n </p>"+  "\n"
+                    + "<p>Chúng tôi rất vui mừng thông báo rằng <b>Tolo</b> muốn mời bạn gia nhập đội ngũ của chúng tôi. Chúng tôi đã ấn tượng với kinh nghiệm và kỹ năng của bạn và chúng tôi tin rằng bạn sẽ là một sự bổ sung tuyệt vời cho đội ngũ của chúng tôi."
+                    + "\n"
+                    + "<p>Chúng tôi muốn đề xuất cho với </p>"
+                    + "<p>Lương cơ bản: "+ jobOffer.getMonthlySalary() + " đồng</p> "
+                    + "<p>Ngày bắt đầu:   <b style=\"color:#9a6c8e\">“"
+                    + jobOffer.getStartDate().toString()
+                    + "”</b> tới ngày <b style=\"color:#9a6c8e\">“"
+                    + jobOffer.getEndDate().toString() + "”</b>. Bên cạnh đó, bạn cũng sẽ nhận được các quyền lợi khác như bảo hiểm, phúc lợi, ... </p>"
+                    + "<p>Nếu bạn đồng ý với đề xuất này, chúng tôi muốn mời bạn đến văn phòng của chúng tôi để thảo luận thêm và ký hợp đồng.</p>"
+                    + "<p>Nếu bạn có bất kỳ câu hỏi hoặc cần thêm thông tin, đừng ngần ngại liên hệ với chúng tôi.</p>"
+                    + "<p>Chúng tôi mong muốn được làm việc cùng bạn.</p>"
+                    + "<hr style=\"border: none; border-top: 1px solid #ddd;\">"
+                    + "<b style=\"color:#9a6c8e\">Người liên hệ của bạn:</b>" + "\n"
+                    + "<b>TOLO</b>"
+                    + "<p>Email: ngohangvn01@gmail.com </p>"
+                    + "<hr style=\"border: none; border-top: 1px solid #ddd;\">"
+                    + "<p><b>Trân trọng</b></p>"
+                    + "<b>Tolo</b><p>Việt Nam</p>";
+            emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
+                    + candidate.getJobPosition().getJobPositionName(), offerDetails);
+            return candidateRepositories.save(candidate);
+        }
+        return null;
+    }
+
+    public void convertCandidateToEmployee(Long candidateId) {
+        Candidate candidate = getCandidate(candidateId);
+        if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.CONTRACT_SIGNED) {
+            Employee employee = new Employee();
+            PersonalInfo personalInfo = new PersonalInfo();
+            Contract contract = new Contract();
+
+            employee.setFullName(candidate.getCandidateName());
+            employee.setPhoneNumber(candidate.getPhoneNumber());
+            employee.setPositionName(candidate.getJobPosition().getJobPositionName());
+            employee.setExperiences(candidate.getExperiences());
+            employee.setSkills(candidate.getSkills());
+
+            personalInfo.setPersonalEmail(candidate.getEmail());
+            personalInfo.setSchool(candidate.getSchool());
+            personalInfo.setCertificates(candidate.getCertificates());
+            personalInfo.setCertificateLevel(candidate.getCertificateLevel());
+            personalInfo.setFieldOfStudy(candidate.getFieldOfStudy());
+            contract.setStartDate(candidate.getJobOffer().getStartDate());
+            contract.setEndDate(candidate.getJobOffer().getEndDate());
+            contract.setMonthlySalary(candidate.getJobOffer().getMonthlySalary());
+            contract.setNoteContract(candidate.getJobOffer().getNoteContract());
+
+            employee.setPersonalInfo(personalInfo);
+            employeeRepositories.save(employee);
+        }
+    }
+
+    public Candidate getCandidateById(Long id) {
+        return candidateRepositories.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Candidate not found with id " + id));
+    }
+
+    public List<Candidate> getCandidate() {
+        return candidateRepositories.findAll();
+    }
+
+    public Candidate updateCandidateInfo(Long id, Candidate candidateDetails) {
+        Candidate candidate = getCandidate(id);
+        if (candidate != null) {
+            candidate.setCandidateName(candidateDetails.getCandidateName());
+            candidate.setEmail(candidateDetails.getEmail());
             return candidateRepositories.save(candidate);
         }
         return null;

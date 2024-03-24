@@ -3,12 +3,12 @@ package com.hrm.Human.Resource.Management.response;
 import lombok.Getter;
 
 @Getter
-public class PositionResponse {
+public class AllowanceResponse {
     private String status;
     private String message;
     private Object data;
 
-    public PositionResponse(String status, String message, Object data) {
+    public AllowanceResponse(String status, String message, Object data) {
         this.status = status;
         this.message = message;
         this.data = data;

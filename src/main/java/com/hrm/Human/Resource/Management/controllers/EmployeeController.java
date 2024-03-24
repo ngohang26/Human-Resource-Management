@@ -47,9 +47,6 @@ public class EmployeeController {
 
     @PostMapping(path = "addEmployee")
     public ResponseEntity<?> createEmployee(@RequestPart("employee") String employeeString, @RequestPart("file") MultipartFile file) {
-        System.out.println("employeeString: " + employeeString);
-        System.out.println("file: " + file.getOriginalFilename());
-
         return employeeService.addEmployee(employeeString, file);
     }
 

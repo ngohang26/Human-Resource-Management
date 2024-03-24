@@ -4,22 +4,28 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
+import java.time.LocalDate;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "skills")
-public class Skill {
+@Table(name = "experiences")
+public class Experience {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column
-    private String name;
+    private String jobTitle;
 
     @Column
-    private String proficiency; // e.g. Beginner, Intermediate, Advanced, Expert
+    private String company;
+
+    @Column
+    private LocalDate startDate;
+
+    @Column
+    private LocalDate endDate;
 
     @ManyToOne
     @JoinColumn(name = "employee_id")

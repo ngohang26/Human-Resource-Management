@@ -1,13 +1,13 @@
 package com.hrm.Human.Resource.Management.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.temporal.Temporal;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "contracts")
 public class Contract {
@@ -30,19 +30,6 @@ public class Contract {
     @Column(nullable = false)
     private int numberOfSignatures;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "employee_code", referencedColumnName = "employeeCode")
-    private Employee employee;
-
-    public Temporal getStartDate() {
-        return startDate;
-    }
-
-    public Temporal getEndDate() {
-        return endDate;
-    }
-
-
     @Column(nullable = false)
-    private Double monthlySalary;
+    private BigDecimal monthlySalary;
 }

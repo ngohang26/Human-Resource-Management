@@ -46,7 +46,9 @@ public class JobPositionServiceImpl implements JobPositionService {
                 .orElseThrow(() -> new EntityNotFoundException("JobPosition not found with id " + id));
 
         existingJobPosition.setJobPositionName(updatedJobPosition.getJobPositionName());
-
+        existingJobPosition.setJobDescription(updatedJobPosition.getJobDescription());
+        existingJobPosition.setSkillsRequired(updatedJobPosition.getSkillsRequired());
+        existingJobPosition.setApplicationDeadline(updatedJobPosition.getApplicationDeadline());
         return jobPositionRepositories.save(existingJobPosition);
     }
 
