@@ -1,7 +1,10 @@
 package com.hrm.Human.Resource.Management.service.impl;
 
 import com.hrm.Human.Resource.Management.entity.Allowance;
+import com.hrm.Human.Resource.Management.entity.Employee;
+import com.hrm.Human.Resource.Management.entity.EmployeeAllowance;
 import com.hrm.Human.Resource.Management.repositories.AllowanceRepositories;
+import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
 import com.hrm.Human.Resource.Management.response.AllowanceResponse;
 import com.hrm.Human.Resource.Management.service.AllowanceService;
 import jakarta.persistence.EntityNotFoundException;
@@ -10,13 +13,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class AllowanceServiceImpl implements AllowanceService {
     @Autowired
     private AllowanceRepositories allowanceRepositories;
+
+    @Autowired
+    private EmployeeRepositories employeeRepositories;
 
     @Override
     public Optional<Allowance> findById(Long id) {
@@ -66,4 +75,23 @@ public class AllowanceServiceImpl implements AllowanceService {
         );
     }
 
-}
+    @Override
+    public Map<Long, BigDecimal> calculateTotalAllowanceAmountForEachEmployee() {
+        List<Employee> employees = employeeRepositories.findAll(); // Lấy danh sách tất cả nhân viên
+        Map<Long, BigDecimal> totalAllowanceAmounts = new HashMap<>();
+
+        for (Employee employee : employees) {
+            List<EmployeeAllowance> allowances = employee.getEmployeeAllowances();
+            BigDecimal totalAmount = BigDecimal.ZERO;
+
+            for (EmployeeAllowance allowance : allowances) {
+                totalAmount = totalAmount.add(allowance.getAllowance().getAllowanceAmount());
+            }
+
+            totalAllowanceAmounts.put(employee.getId(), totalAmount);
+        }
+
+        return totalAllowanceAmounts;
+    }
+
+    }

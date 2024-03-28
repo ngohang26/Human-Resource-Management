@@ -17,13 +17,10 @@ public class Allowance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
+    @Column(nullable = false, unique = true)
     private String allowanceName;
 
     @Column
     private BigDecimal allowanceAmount;
 
-//    public BigDecimal getAllowanceAmount() {
-//        return allowanceAmount;
-//    }
 }

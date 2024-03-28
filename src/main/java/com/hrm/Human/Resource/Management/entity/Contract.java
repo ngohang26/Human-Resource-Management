@@ -32,4 +32,9 @@ public class Contract {
 
     @Column(nullable = false)
     private BigDecimal monthlySalary;
+
+    @ManyToOne
+    @JoinColumn(name = "employee_id")
+    private Employee employee;
+
 }

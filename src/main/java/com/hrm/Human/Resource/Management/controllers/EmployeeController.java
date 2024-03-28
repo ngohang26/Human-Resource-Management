@@ -1,6 +1,8 @@
 package com.hrm.Human.Resource.Management.controllers;
 
+import com.hrm.Human.Resource.Management.entity.Allowance;
 import com.hrm.Human.Resource.Management.entity.Employee;
+import com.hrm.Human.Resource.Management.entity.EmployeeAllowance;
 import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
 import com.hrm.Human.Resource.Management.response.EmployeeResponse;
 import com.hrm.Human.Resource.Management.service.EmployeeService;
@@ -81,4 +83,26 @@ public class EmployeeController {
         return new ResponseEntity<>(exists, HttpStatus.OK);
     }
 
+    // Lấy tất cả các phụ cấp của một nhân viên
+    @GetMapping("/{id}/allowances")
+    public ResponseEntity<List<Allowance>> getEmployeeAllowances(@PathVariable Long id) {
+        return employeeService.getAllowances(id);
+    }
+
+    // Thêm phụ cấp cho một nhân viên
+    @PostMapping("/{id}/allowances/{allowanceId}")
+    public ResponseEntity<Employee> addAllowanceToEmployee(@PathVariable Long id, @PathVariable Long allowanceId, @RequestBody EmployeeAllowance employeeAllowance) {
+        return employeeService.addAllowance(id, allowanceId, employeeAllowance.getStartDate(), employeeAllowance.getEndDate());
+    }
+
+    @PutMapping("/{employeeId}/allowances/{allowanceId}")
+    public ResponseEntity<EmployeeAllowance> updateEmployeeAllowance(@PathVariable Long employeeId, @PathVariable Long allowanceId, @RequestBody EmployeeAllowance newEmployeeAllowance) {
+        return employeeService.updateAllowance(employeeId, allowanceId, newEmployeeAllowance);
+    }
+
+    // Xóa phụ cấp của một nhân viên
+    @DeleteMapping("/{employeeId}/allowances/{allowanceId}")
+    public ResponseEntity<Void> deleteEmployeeAllowance(@PathVariable Long employeeId, @PathVariable Long allowanceId) {
+        return employeeService.deleteAllowance(employeeId, allowanceId);
+    }
 }

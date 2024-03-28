@@ -201,7 +201,8 @@ public class CandidateService {
         if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.CONTRACT_SIGNED) {
             Employee employee = new Employee();
             PersonalInfo personalInfo = new PersonalInfo();
-            Contract contract = new Contract();
+            Contract contract;
+            contract = new Contract();
 
             employee.setFullName(candidate.getCandidateName());
             employee.setPhoneNumber(candidate.getPhoneNumber());

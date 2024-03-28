@@ -2,9 +2,11 @@ package com.hrm.Human.Resource.Management.service.impl;
 
 import com.github.javafaker.Faker;
 import com.hrm.Human.Resource.Management.dto.AttendanceDTO;
+import com.hrm.Human.Resource.Management.entity.Contract;
 import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.entity.Attendance;
 import com.hrm.Human.Resource.Management.repositories.AttendanceRepositories;
+import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
 import com.hrm.Human.Resource.Management.service.EmployeeService;
 import com.hrm.Human.Resource.Management.service.AttendanceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,11 +14,11 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +31,12 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Autowired
     private AttendanceRepositories attendanceRepositories;
 
+    @Autowired
+    private EmployeeRepositories employeeRepositories;
+
+//    @Autowired
+//    private ContractRepositories contractRepositories;
+//
     public Attendance createWorkTime(Employee employee, LocalDate date) {
         Faker faker = Faker.instance();
 
@@ -95,11 +103,58 @@ public class AttendanceServiceImpl implements AttendanceService {
         List<Attendance> attendances = attendanceRepositories.findByDate(date);
         return attendances.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
+//
+//    @Override
+//    public Long calculateWorkDays(Long employeeId) {
+//        List<Attendance> attendances = attendanceRepositories.findByEmployeeId(employeeId);
+//        return (long) attendances.size();
+//    }
+//@Override
+//    public Map<Long, BigDecimal> calculateOvertimeSalaryForEachEmployee() {
+//        List<Employee> employees = employeeRepositories.findAll();
+//        Map<Long, BigDecimal> overtimeSalaries = new HashMap<>();
+//
+//        for (Employee employee : employees) {
+//            BigDecimal monthlySalary = getMonthlySalary(employee);
+//            Long totalOvertimeHours = getTotalOvertimeHours(employee);
+//
+//            BigDecimal overtimeSalary = calculateOvertimeSalary(monthlySalary, totalOvertimeHours);
+//            overtimeSalaries.put(employee.getId(), overtimeSalary);
+//        }
+//
+//        return overtimeSalaries;
+//    }
+//@Override
+//public BigDecimal getMonthlySalary(Employee employee) {
+//    Contract contract = contractRepositories.findByEmployeeCode(employee.getEmployeeCode());
+//    return contract.getMonthlySalary();
+//    }
+//@Override
+//public Long getTotalOvertimeHours(Employee employee) {
+//        List<Attendance> attendances = attendanceRepositories.findByEmployee(employee);
+//        return attendances.stream()
+//                .mapToLong(Attendance::getOverTime)
+//                .sum();
+//    }
+//
+//    @Override
+//    public BigDecimal calculateOvertimeSalary(BigDecimal monthlySalary, Long totalOvertimeHours) {
+//        BigDecimal workDaysPerMonth = BigDecimal.valueOf(26);
+//        BigDecimal workHoursPerDay = BigDecimal.valueOf(8);
+//
+//        BigDecimal hourlyRate = monthlySalary.divide(workDaysPerMonth, 2, RoundingMode.HALF_UP)
+//                .divide(workHoursPerDay, 2, RoundingMode.HALF_UP);
+//
+//        return hourlyRate.multiply(BigDecimal.valueOf(totalOvertimeHours));
+//    }
 
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {
         LocalDate today = LocalDate.now();
-        createWorkTimes(today);
+        List<Attendance> attendancesToday = attendanceRepositories.findByDate(today);
+        if (attendancesToday.isEmpty()) {
+            createWorkTimes(today);
+        }
     }
 }
 

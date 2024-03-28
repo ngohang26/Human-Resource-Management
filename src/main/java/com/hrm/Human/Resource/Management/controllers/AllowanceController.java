@@ -9,7 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -46,5 +48,11 @@ public class AllowanceController {
     @DeleteMapping("/hardDelete/{id}")
     public ResponseEntity<AllowanceResponse> hardDeleteAllowance(@PathVariable Long id) {
         return allowanceService.hardDeleteAllowance(id);
+    }
+
+    @GetMapping("/calculateTotalAllowanceAmount")
+    public ResponseEntity<Map<Long, BigDecimal>> calculateTotalAllowanceAmount() {
+        Map<Long, BigDecimal> totalAmounts = allowanceService.calculateTotalAllowanceAmountForEachEmployee();
+        return ResponseEntity.ok(totalAmounts);
     }
 }

@@ -6,7 +6,9 @@ import com.hrm.Human.Resource.Management.response.AllowanceResponse;
 import com.hrm.Human.Resource.Management.response.JobPositionResponse;
 import org.springframework.http.ResponseEntity;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface AllowanceService {
@@ -20,4 +22,6 @@ public interface AllowanceService {
 
 
     ResponseEntity<AllowanceResponse> hardDeleteAllowance(Long id);
+
+    Map<Long, BigDecimal> calculateTotalAllowanceAmountForEachEmployee();
 }

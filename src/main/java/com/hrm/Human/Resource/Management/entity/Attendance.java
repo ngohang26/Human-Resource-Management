@@ -30,6 +30,9 @@ public class Attendance {
     @Column(nullable = false)
     private Long workTime;
 
+    @Column
+    private Long overTime;
+
     @ManyToOne
     @JoinColumn(name = "employee_code", referencedColumnName = "employeeCode")
     private Employee employee;
@@ -40,5 +43,11 @@ public class Attendance {
         this.timeOut = timeOut;
         this.employee = employee;
         this.workTime = Duration.between(timeIn, timeOut).toHours() - 1;
+        if (this.workTime > 8) {
+            this.overTime = this.workTime - 8;
+        } else {
+            this.overTime = 0L;
+        }
     }
+
 }

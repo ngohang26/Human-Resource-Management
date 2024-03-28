@@ -3,14 +3,8 @@ package com.hrm.Human.Resource.Management.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.hrm.Human.Resource.Management.entity.Department;
-import com.hrm.Human.Resource.Management.entity.Employee;
-import com.hrm.Human.Resource.Management.entity.PersonalInfo;
-import com.hrm.Human.Resource.Management.entity.Position;
-import com.hrm.Human.Resource.Management.repositories.DepartmentRepositories;
-import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
-import com.hrm.Human.Resource.Management.repositories.PersonalInfoRepositories;
-import com.hrm.Human.Resource.Management.repositories.PositionRepositories;
+import com.hrm.Human.Resource.Management.entity.*;
+import com.hrm.Human.Resource.Management.repositories.*;
 import com.hrm.Human.Resource.Management.response.EmployeeResponse;
 import com.hrm.Human.Resource.Management.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
@@ -36,6 +32,15 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Autowired
     private DepartmentRepositories departmentRepositories;
+
+    @Autowired
+    private AllowanceRepositories allowanceRepositories;
+
+    @Autowired
+    private EmployeeAllowanceRepositories employeeAllowanceRepositories;
+
+    @Autowired
+    private AttendanceRepositories attendanceRepositories;
 
     @Autowired
     private ImageStorageService imageStorageService;
@@ -251,4 +256,63 @@ public ResponseEntity<?> addEmployee(String employeeString, MultipartFile file) 
     public boolean existsByIdentityCardNumber(String identityCardNumber) {
         return employeeRepositories.existsByPersonalInfoIdentityCardNumber(identityCardNumber);
     }
+
+    @Override
+    public ResponseEntity<List<Allowance>> getAllowances(Long employeeId) {
+        Optional<Employee> employee = employeeRepositories.findById(employeeId);
+        if (employee.isPresent()) {
+            List<Allowance> allowances = employee.get().getEmployeeAllowances().stream().map(EmployeeAllowance::getAllowance).collect(Collectors.toList());
+            return ResponseEntity.ok(allowances);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @Override
+    public ResponseEntity<Employee> addAllowance(Long employeeId, Long allowanceId, LocalDate startDate, LocalDate endDate) {
+        Optional<Employee> employee = employeeRepositories.findById(employeeId);
+        Optional<Allowance> allowance = allowanceRepositories.findById(allowanceId);
+        if (employee.isPresent() && allowance.isPresent()) {
+            EmployeeAllowance employeeAllowance = new EmployeeAllowance();
+            employeeAllowance.setEmployee(employee.get());
+            employeeAllowance.setAllowance(allowance.get());
+            employeeAllowance.setStartDate(startDate);
+            employeeAllowance.setEndDate(endDate);
+            employeeAllowanceRepositories.save(employeeAllowance);
+            return ResponseEntity.ok(employee.get());
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @Override
+    public ResponseEntity<EmployeeAllowance> updateAllowance(Long employeeId, Long allowanceId, EmployeeAllowance newEmployeeAllowance) {
+        Optional<Employee> employee = employeeRepositories.findById(employeeId);
+        Optional<Allowance> allowance = allowanceRepositories.findById(allowanceId);
+        if (employee.isPresent() && allowance.isPresent()) {
+            Optional<EmployeeAllowance> employeeAllowance = employeeAllowanceRepositories.findByEmployeeAndAllowance(employee.get(), allowance.get());
+            if (employeeAllowance.isPresent()) {
+                employeeAllowance.get().setStartDate(newEmployeeAllowance.getStartDate());
+                employeeAllowance.get().setEndDate(newEmployeeAllowance.getEndDate());
+                return ResponseEntity.ok(employeeAllowanceRepositories.save(employeeAllowance.get()));
+            }
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @Override
+    public ResponseEntity<Void> deleteAllowance(Long employeeId, Long allowanceId) {
+        Optional<Employee> employee = employeeRepositories.findById(employeeId);
+        Optional<Allowance> allowance = allowanceRepositories.findById(allowanceId);
+        if (employee.isPresent() && allowance.isPresent()) {
+            EmployeeAllowance employeeAllowance = employee.get().getEmployeeAllowances().stream().filter(ea -> ea.getAllowance().equals(allowance.get())).findFirst().orElse(null);
+            if (employeeAllowance != null) {
+                employee.get().getEmployeeAllowances().remove(employeeAllowance);
+                employeeRepositories.save(employee.get());
+                return ResponseEntity.ok().build();
+            }
+        }
+        return ResponseEntity.notFound().build();
+    }
 }
+
