@@ -1,5 +1,6 @@
 package com.hrm.Human.Resource.Management.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -60,6 +61,7 @@ public class Employee {
     private String departmentName;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "department_id")
     private Department department;
 

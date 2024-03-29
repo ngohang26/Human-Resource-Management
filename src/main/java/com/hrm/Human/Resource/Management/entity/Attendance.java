@@ -34,7 +34,7 @@ public class Attendance {
     private Long overTime;
 
     @ManyToOne
-    @JoinColumn(name = "employee_code", referencedColumnName = "employeeCode")
+    @JoinColumn(name = "employee_id")
     private Employee employee;
 
     public Attendance(LocalDate date, LocalTime timeIn, LocalTime timeOut, Employee employee) {
@@ -50,4 +50,8 @@ public class Attendance {
         }
     }
 
+    public int calculateWorkdays() {
+        return (workTime >= 8) ? 1 : 0;  // Nếu workTime lớn hơn hoặc bằng 8, số ngày công là 1
+        // Ngược lại, số ngày công là 0
+    }
 }

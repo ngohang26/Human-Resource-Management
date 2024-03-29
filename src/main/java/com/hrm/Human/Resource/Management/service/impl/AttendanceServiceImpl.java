@@ -2,7 +2,6 @@ package com.hrm.Human.Resource.Management.service.impl;
 
 import com.github.javafaker.Faker;
 import com.hrm.Human.Resource.Management.dto.AttendanceDTO;
-import com.hrm.Human.Resource.Management.entity.Contract;
 import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.entity.Attendance;
 import com.hrm.Human.Resource.Management.repositories.AttendanceRepositories;
@@ -14,10 +13,9 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,27 +32,20 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Autowired
     private EmployeeRepositories employeeRepositories;
 
-//    @Autowired
-//    private ContractRepositories contractRepositories;
-//
     public Attendance createWorkTime(Employee employee, LocalDate date) {
         Faker faker = Faker.instance();
 
         LocalTime timeIn = LocalTime.of(
-                faker.number().numberBetween(8, 8), // Giờ ngẫu nhiên từ 7 đến 8
-                0
+                faker.number().numberBetween(8, 8),0
         );
 
         double overtimeChance = faker.number().randomDouble(2, 0, 1);
         LocalTime timeOut;
         if (overtimeChance < 0.2) {
-            // 20% cơ hội làm việc trên 8 giờ
             timeOut = LocalTime.of(
-                    faker.number().numberBetween(17, 22), // Giờ ngẫu nhiên từ 17 đến 22
-                    0
+                    faker.number().numberBetween(17, 22),0
             );
         } else {
-            // 80% cơ hội làm việc 8 giờ
             timeOut = LocalTime.of(17, 0);
         }
 
@@ -103,6 +94,24 @@ public class AttendanceServiceImpl implements AttendanceService {
         List<Attendance> attendances = attendanceRepositories.findByDate(date);
         return attendances.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
+
+    @Override
+    public Map<Long, Integer> calculateWorkdays(int year, int month) {
+        Map<Long, Integer> workdaysMap = new HashMap<>();
+        List<Attendance> attendances = attendanceRepositories.findByDateBetween(
+                LocalDate.of(year, month, 1),
+                LocalDate.of(year, month, YearMonth.of(year, month).lengthOfMonth())
+        );
+
+        for (Attendance attendance : attendances) {
+            Long employeeId = attendance.getEmployee().getId();
+            int workdays = attendance.calculateWorkdays(); // Tính số ngày công
+            workdaysMap.put(employeeId, workdaysMap.getOrDefault(employeeId, 0) + workdays);
+        }
+
+        return workdaysMap;
+    }
+
 //
 //    @Override
 //    public Long calculateWorkDays(Long employeeId) {

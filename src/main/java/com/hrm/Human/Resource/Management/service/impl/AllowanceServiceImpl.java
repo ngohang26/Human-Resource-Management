@@ -79,18 +79,14 @@ public class AllowanceServiceImpl implements AllowanceService {
     public Map<Long, BigDecimal> calculateTotalAllowanceAmountForEachEmployee() {
         List<Employee> employees = employeeRepositories.findAll(); // Lấy danh sách tất cả nhân viên
         Map<Long, BigDecimal> totalAllowanceAmounts = new HashMap<>();
-
         for (Employee employee : employees) {
             List<EmployeeAllowance> allowances = employee.getEmployeeAllowances();
             BigDecimal totalAmount = BigDecimal.ZERO;
-
             for (EmployeeAllowance allowance : allowances) {
                 totalAmount = totalAmount.add(allowance.getAllowance().getAllowanceAmount());
             }
-
             totalAllowanceAmounts.put(employee.getId(), totalAmount);
         }
-
         return totalAllowanceAmounts;
     }
 

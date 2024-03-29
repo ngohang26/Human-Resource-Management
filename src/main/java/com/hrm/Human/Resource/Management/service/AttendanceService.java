@@ -19,6 +19,8 @@ public interface AttendanceService {
 
     List<AttendanceDTO> getAttendancesByDate(LocalDate date);
 
+    Map<Long, Integer> calculateWorkdays(int year, int month);
+
 //    Long calculateWorkDays(Long employeeId);
 //
 //    Map<Long, BigDecimal> calculateOvertimeSalaryForEachEmployee();
