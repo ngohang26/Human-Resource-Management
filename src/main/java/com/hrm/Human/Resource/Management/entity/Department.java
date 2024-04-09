@@ -1,9 +1,9 @@
 package com.hrm.Human.Resource.Management.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -15,10 +15,11 @@ public class Department {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
+    @Column(unique = true)
     private String departmentName;
 
     @ManyToOne
+    @JsonBackReference
     @JoinColumn(name = "manager_id")
     private Employee manager;
 

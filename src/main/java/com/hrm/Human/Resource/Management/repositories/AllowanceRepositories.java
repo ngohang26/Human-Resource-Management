@@ -14,4 +14,5 @@ public interface AllowanceRepositories extends JpaRepository<Allowance, Long> {
     Optional<Allowance> findByAllowanceNameContaining(String jobAllowanceName);
 
     Optional<Object> findByAllowanceName(String jobAllowanceName);
+
 }

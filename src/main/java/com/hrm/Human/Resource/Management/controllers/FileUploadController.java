@@ -1,6 +1,6 @@
     package com.hrm.Human.Resource.Management.controllers;
 
-    import com.hrm.Human.Resource.Management.response.EmployeeResponse;
+    import com.hrm.Human.Resource.Management.response.UploadResponse;
     import com.hrm.Human.Resource.Management.service.IStorageService;
     import org.springframework.beans.factory.annotation.Autowired;
     import org.springframework.http.HttpStatus;
@@ -11,28 +11,27 @@
     import org.springframework.web.multipart.MultipartFile;
     import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 
+    import java.nio.file.Files;
+    import java.nio.file.Path;
     import java.util.List;
     import java.util.stream.Collectors;
 
     @Controller
     @RequestMapping(path = "/api/FileUpload")
     public class FileUploadController {
-        // inject storage service here
         @Autowired
         private IStorageService storageService;
-        // this controller receive file/ image from client
         @PostMapping("") // search
-        public ResponseEntity<EmployeeResponse> uploadFile(@RequestParam("file")MultipartFile file) {
+        public ResponseEntity<UploadResponse> uploadFile(@RequestParam("file")MultipartFile file) {
             try {
-                // save files to a folder => use a service
                 String generatedFileName = storageService.storeFile(file);
                 return ResponseEntity.status(HttpStatus.OK).body(
-                        new EmployeeResponse("ok", "upload successfully", generatedFileName)
+                        new UploadResponse("ok", "upload successfully", generatedFileName)
 
                 );
             } catch (Exception exception) {
                 return  ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body (
-                        new EmployeeResponse("ok", exception.getMessage(), "")
+                        new UploadResponse("ok", exception.getMessage(), "")
                 );
             }
         }
@@ -50,9 +49,8 @@
             }
         }
 
-        // load all uploaded files
         @GetMapping("")
-        public ResponseEntity<EmployeeResponse> getUploadedFiles() {
+        public ResponseEntity<UploadResponse> getUploadedFiles() {
             try {
                 List<String> urls = storageService.loadAll()
                         .map(path -> {
@@ -62,11 +60,31 @@
                             return urlsPath;
                         })
                         .collect(Collectors.toList());
-                return ResponseEntity.ok(new EmployeeResponse("ok", "List files successfully", urls));
+                return ResponseEntity.ok(new UploadResponse("ok", "List files successfully", urls));
             }catch (Exception exception) {
                 return ResponseEntity.ok(
-                        new EmployeeResponse("failed", "List files failed", new String[] {})
+                        new UploadResponse("failed", "List files failed", new String[] {})
                 );
             }
         }
+
+        @PutMapping("/{fileName}")
+        public ResponseEntity<UploadResponse> updateFile(@PathVariable String fileName, @RequestParam("file") MultipartFile file) {
+            try {
+                // Xóa hình ảnh cũ
+
+                Files.deleteIfExists(storageService.getStorageFolder().resolve(fileName));
+                // Lưu hình ảnh mới và lấy tên file được tạo
+                String generatedFileName = storageService.storeFile(file);
+
+                return ResponseEntity.status(HttpStatus.OK).body(
+                        new UploadResponse("ok", "update successfully", generatedFileName)
+                );
+            } catch (Exception exception) {
+                return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(
+                        new UploadResponse("failed", exception.getMessage(), "")
+                );
+            }
+        }
+
     }

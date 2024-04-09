@@ -4,6 +4,7 @@ import com.hrm.Human.Resource.Management.entity.Allowance;
 import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.entity.EmployeeAllowance;
 import com.hrm.Human.Resource.Management.repositories.AllowanceRepositories;
+import com.hrm.Human.Resource.Management.repositories.EmployeeAllowanceRepositories;
 import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
 import com.hrm.Human.Resource.Management.response.AllowanceResponse;
 import com.hrm.Human.Resource.Management.service.AllowanceService;
@@ -14,10 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class AllowanceServiceImpl implements AllowanceService {
@@ -27,9 +25,12 @@ public class AllowanceServiceImpl implements AllowanceService {
     @Autowired
     private EmployeeRepositories employeeRepositories;
 
+    @Autowired
+    private EmployeeAllowanceRepositories employeeAllowanceRepositories;
+
     @Override
-    public Optional<Allowance> findById(Long id) {
-        return allowanceRepositories.findById(id);
+    public List<EmployeeAllowance> findByEmployeeCode(String employeeCode) {
+        return employeeAllowanceRepositories.findByEmployee_EmployeeCode(employeeCode);
     }
 
     @Override
@@ -75,19 +76,45 @@ public class AllowanceServiceImpl implements AllowanceService {
         );
     }
 
+//    @Override
+//    public List<Allowance> getEmployeeAllowances(String employeeCode) {
+//        Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
+//        if (employee == null) {
+//            throw new RuntimeException("Employee not found");
+//        }
+//        List<EmployeeAllowance> employeeAllowances = employeeAllowanceRepositories.findByEmployee(employee);
+//        return employeeAllowances.stream().map(employeeAllowance -> {
+//            EmployeeAllowanceDTO dto = new EmployeeAllowanceDTO();
+//            dto.setAllowanceId(employeeAllowance.getAllowance().getId());
+//            dto.setEmployeeCode(employee.getEmployeeCode());
+//            dto.setAllowanceName(employeeAllowance.getAllowance().getAllowanceName());
+//            dto.setAllowanceAmount(employeeAllowance.getAllowance().getAllowanceAmount());
+//            dto.setStartDate(employeeAllowance.getStartDate());
+//            dto.setEndDate(employeeAllowance.getEndDate());
+//            return dto;
+//        }).collect(Collectors.toList());
+//    }
     @Override
-    public Map<Long, BigDecimal> calculateTotalAllowanceAmountForEachEmployee() {
-        List<Employee> employees = employeeRepositories.findAll(); // Lấy danh sách tất cả nhân viên
-        Map<Long, BigDecimal> totalAllowanceAmounts = new HashMap<>();
-        for (Employee employee : employees) {
-            List<EmployeeAllowance> allowances = employee.getEmployeeAllowances();
-            BigDecimal totalAmount = BigDecimal.ZERO;
-            for (EmployeeAllowance allowance : allowances) {
-                totalAmount = totalAmount.add(allowance.getAllowance().getAllowanceAmount());
-            }
-            totalAllowanceAmounts.put(employee.getId(), totalAmount);
+    public List<Allowance> getAllowancesForEmployee(String employeeCode) {
+        Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
+        List<EmployeeAllowance> employeeAllowances = employeeAllowanceRepositories.findByEmployee(employee);
+        List<Allowance> allowances = new ArrayList<>();
+        for (EmployeeAllowance employeeAllowance : employeeAllowances) {
+            allowances.add(employeeAllowance.getAllowance());
         }
-        return totalAllowanceAmounts;
+        return allowances;
     }
-
+    @Override
+    public BigDecimal getTotalAllowance(String employeeCode) {
+        Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
+        if (employee == null) {
+            throw new RuntimeException("Employee not found");
+        }
+        List<EmployeeAllowance> employeeAllowances = employeeAllowanceRepositories.findByEmployee(employee);
+        BigDecimal totalAllowance = BigDecimal.ZERO;
+        for (EmployeeAllowance employeeAllowance : employeeAllowances) {
+            totalAllowance = totalAllowance.add(employeeAllowance.getAllowance().getAllowanceAmount());
+        }
+        return totalAllowance;
     }
+}

@@ -5,6 +5,9 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import jakarta.servlet.MultipartConfigElement;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.unit.DataSize;
@@ -12,7 +15,7 @@ import org.springframework.util.unit.DataSize;
 import java.time.format.DateTimeFormatter;
 
 @Configuration
-
+@EnableCaching
 public class MultipartConfig {
     @Bean
     MultipartConfigElement multipartConfigElement() {
@@ -29,4 +32,9 @@ public class MultipartConfig {
             builder.deserializers(new LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")));
         };
     }
+    @Bean
+    public CacheManager cacheManager() {
+        return new ConcurrentMapCacheManager("employeeSalaries");
+    }
+
 }

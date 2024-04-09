@@ -13,7 +13,11 @@ import java.util.Optional;
 @EnableJpaRepositories
 @Repository
 public interface EmployeeAllowanceRepositories extends JpaRepository<EmployeeAllowance, Long> {
-    Optional<EmployeeAllowance> findByEmployeeAndAllowance(Employee employee, Allowance allowance);
 
-    List<EmployeeAllowance> findByEmployeeId(Long employeeId);
+    List<EmployeeAllowance> findByEmployee_EmployeeCode(String employeeCode);
+
+
+    List<EmployeeAllowance> findByEmployee(Employee employee);
+
+    EmployeeAllowance findByEmployeeAndAllowance(Employee employee, Allowance allowance);
 }

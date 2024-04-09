@@ -34,7 +34,7 @@ public class Attendance {
     private Long overTime;
 
     @ManyToOne
-    @JoinColumn(name = "employee_id")
+    @JoinColumn(name = "employee_code", referencedColumnName = "employeeCode")
     private Employee employee;
 
     public Attendance(LocalDate date, LocalTime timeIn, LocalTime timeOut, Employee employee) {

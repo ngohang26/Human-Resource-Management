@@ -1,6 +1,8 @@
 package com.hrm.Human.Resource.Management.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,6 +13,7 @@ import javax.validation.constraints.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Getter
 @Setter
@@ -61,7 +64,7 @@ public class Employee {
     private String departmentName;
 
     @ManyToOne
-    @JsonIgnore
+    @JsonManagedReference
     @JoinColumn(name = "department_id")
     private Department department;
 
@@ -87,10 +90,6 @@ public class Employee {
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Experience> experiences = new ArrayList<>();
 
-    // Trong lớp Employee
-    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<EmployeeAllowance> employeeAllowances = new ArrayList<>();
-
     public Employee() {
         this.isDeleted = false;
     }
@@ -106,5 +105,8 @@ public class Employee {
 
     public void setIsDeleted(boolean b) {}
 
+
+//    public void setDepartment(Department department) {
+//    }
 }
 

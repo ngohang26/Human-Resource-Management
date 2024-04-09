@@ -1,6 +1,8 @@
 package com.hrm.Human.Resource.Management.controllers;
 
+import com.hrm.Human.Resource.Management.dto.EmployeeContractDTO;
 import com.hrm.Human.Resource.Management.entity.Allowance;
+import com.hrm.Human.Resource.Management.entity.Contract;
 import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.entity.EmployeeAllowance;
 import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
@@ -25,6 +27,7 @@ public class EmployeeController {
     @Autowired
     private EmployeeService employeeService;
 
+
     @GetMapping(path = "getAllEmployees")
     public List<Employee> getAllEmployees() {
         return employeeService.getEmployees();
@@ -47,14 +50,19 @@ public class EmployeeController {
     }
 
 
-    @PostMapping(path = "addEmployee")
-    public ResponseEntity<?> createEmployee(@RequestPart("employee") String employeeString, @RequestPart("file") MultipartFile file) {
-        return employeeService.addEmployee(employeeString, file);
+    @PostMapping("/addEmployee")
+    public ResponseEntity<Employee> addEmployee(@RequestBody Employee employee) {
+        Employee savedEmployee = employeeService.saveEmployee(employee);
+        return new ResponseEntity<>(savedEmployee, HttpStatus.CREATED);
     }
 
-    @PutMapping(path = "updateEmployee/{id}")
-    public ResponseEntity<?> updateEmployee(@PathVariable Long id, @RequestPart("employee") String employeeString, @RequestPart("file") MultipartFile file) {
-        return employeeService.updateEmployee(id, employeeString, file);
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateEmployee(@PathVariable Long id, @RequestBody Employee employeeDetails) {
+        ResponseEntity<?> updatedEmployee = employeeService.updateEmployee(id, employeeDetails);
+        if (updatedEmployee == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Employee not found.");
+        }
+        return new ResponseEntity<>(updatedEmployee, HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
@@ -77,32 +85,33 @@ public class EmployeeController {
         return employeeService.searchEmployee(keyword);
     }
 
-    @GetMapping("/exists/{identityCardNumber}")
-    public ResponseEntity<Boolean> checkIdentityCardNumberExists(@PathVariable String identityCardNumber) {
-        boolean exists = employeeService.existsByIdentityCardNumber(identityCardNumber);
-        return new ResponseEntity<>(exists, HttpStatus.OK);
+    @GetMapping("/contracts")
+    public ResponseEntity<List<EmployeeContractDTO>> getAllEmployeeContracts() {
+        List<EmployeeContractDTO> employeeContracts = employeeService.getAllEmployeeContracts();
+        return ResponseEntity.ok(employeeContracts);
     }
 
-    // Lấy tất cả các phụ cấp của một nhân viên
-    @GetMapping("/{id}/allowances")
-    public ResponseEntity<List<Allowance>> getEmployeeAllowances(@PathVariable Long id) {
-        return employeeService.getAllowances(id);
+    @PostMapping("/{employeeCode}/contract")
+    public ResponseEntity<EmployeeContractDTO> createContract(@PathVariable String employeeCode, @RequestBody Contract contract) {
+        EmployeeContractDTO createdContract = employeeService.createContract(employeeCode, contract);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdContract);
     }
 
-    // Thêm phụ cấp cho một nhân viên
-    @PostMapping("/{id}/allowances/{allowanceId}")
-    public ResponseEntity<Employee> addAllowanceToEmployee(@PathVariable Long id, @PathVariable Long allowanceId, @RequestBody EmployeeAllowance employeeAllowance) {
-        return employeeService.addAllowance(id, allowanceId, employeeAllowance.getStartDate(), employeeAllowance.getEndDate());
+    @PutMapping("/{employeeCode}/contract")
+    public ResponseEntity<EmployeeContractDTO> updateContract(@PathVariable String employeeCode, @RequestBody Contract contract) {
+        EmployeeContractDTO updatedContract = employeeService.updateContract(employeeCode, contract);
+        return ResponseEntity.ok(updatedContract);
     }
 
-    @PutMapping("/{employeeId}/allowances/{allowanceId}")
-    public ResponseEntity<EmployeeAllowance> updateEmployeeAllowance(@PathVariable Long employeeId, @PathVariable Long allowanceId, @RequestBody EmployeeAllowance newEmployeeAllowance) {
-        return employeeService.updateAllowance(employeeId, allowanceId, newEmployeeAllowance);
+    @GetMapping("/{employeeCode}/contract")
+    public ResponseEntity<EmployeeContractDTO> getContract(@PathVariable String employeeCode) {
+        EmployeeContractDTO contract = employeeService.getContract(employeeCode);
+        return ResponseEntity.ok(contract);
     }
 
-    // Xóa phụ cấp của một nhân viên
-    @DeleteMapping("/{employeeId}/allowances/{allowanceId}")
-    public ResponseEntity<Void> deleteEmployeeAllowance(@PathVariable Long employeeId, @PathVariable Long allowanceId) {
-        return employeeService.deleteAllowance(employeeId, allowanceId);
+    @GetMapping("/employeeCodes")
+    public List<String> getEmployeeCodes() {
+        return employeeService.getEmployeeCodes();
     }
+
 }

@@ -15,10 +15,10 @@ public class Position {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
+    @Column(unique = true, nullable = false)
     private String positionName;
 
-    @Column
+    @Column(nullable = false)
     private String jobSummary;
 
 

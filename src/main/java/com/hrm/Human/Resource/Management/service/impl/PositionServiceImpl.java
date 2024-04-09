@@ -29,6 +29,10 @@ public class PositionServiceImpl implements PositionService {
     public List<Position> getPositions() {return positionRepositories.findAll();}
 
     @Override
+    public Position findPositionByName(String positionName) {
+        return positionRepositories.findByPositionName(positionName);
+    }
+    @Override
     public ResponseEntity<?> addPosition(Position position) {
         Optional<Position> existingPosition = positionRepositories.findByPositionNameContaining(position.getPositionName());
         if (existingPosition.isPresent()) {
@@ -48,13 +52,19 @@ public class PositionServiceImpl implements PositionService {
         Position existingPosition = positionRepositories.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Position not found with id " + id));
 
+        Optional<Position> positionWithNewName = positionRepositories.findByPositionNameContaining(updatedPosition.getPositionName());
+        if (positionWithNewName.isPresent() && !positionWithNewName.get().getId().equals(id)) {
+            throw new IllegalArgumentException("Position already exists.");
+        }
+
         existingPosition.setPositionName(updatedPosition.getPositionName());
         existingPosition.setJobSummary(updatedPosition.getJobSummary());
         return positionRepositories.save(existingPosition);
     }
 
+
     @Override
-    public ResponseEntity<PositionResponse> hardDeletePosition(Long id){
+    public ResponseEntity<PositionResponse> deletePosition(Long id){
         boolean exists = positionRepositories.existsById(id);
         if (exists) {
             positionRepositories.deleteById(id);

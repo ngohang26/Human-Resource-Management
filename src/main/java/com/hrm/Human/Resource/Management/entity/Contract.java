@@ -15,6 +15,9 @@ public class Contract {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
+    private String contractCode;
+
     @Column(nullable = false)
     private LocalDate startDate;
 
@@ -33,8 +36,15 @@ public class Contract {
     @Column(nullable = false)
     private BigDecimal monthlySalary;
 
-    @ManyToOne
-    @JoinColumn(name = "employee_id")
-    private Employee employee;
+    public Contract() {}
+    @PostPersist
+    public void generateContractCode() {
+        LocalDate date = LocalDate.now();
+        int year = date.getYear() % 100;
+        int month = date.getMonthValue();
+        this.contractCode = String.format("%03d/%02d/%02d" + "-HĐLĐ", id, month, year);
+    }
 
+    public void setEmployee(Employee employee) {
+    }
 }

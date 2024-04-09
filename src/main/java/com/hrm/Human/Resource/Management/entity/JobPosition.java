@@ -10,12 +10,12 @@ import java.util.Date;
 @Setter
 @Entity
 @Table(name = "job_position")
-public class JobPosition {
+public class    JobPosition {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
+    @Column(unique = true)
     private String jobPositionName;
 
     @Column

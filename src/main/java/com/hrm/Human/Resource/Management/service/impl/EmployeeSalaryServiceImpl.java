@@ -1,5 +1,6 @@
 package com.hrm.Human.Resource.Management.service.impl;
 
+import com.hrm.Human.Resource.Management.dto.EmployeeAllowanceDTO;
 import com.hrm.Human.Resource.Management.entity.*;
 import com.hrm.Human.Resource.Management.repositories.AttendanceRepositories;
 import com.hrm.Human.Resource.Management.repositories.ContractRepositories;
@@ -8,6 +9,8 @@ import com.hrm.Human.Resource.Management.service.AllowanceService;
 import com.hrm.Human.Resource.Management.service.AttendanceService;
 import com.hrm.Human.Resource.Management.service.EmployeeSalaryService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -37,110 +40,250 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
     @Autowired
     private AttendanceService attendanceService;
 
+    @Autowired
+    private CacheManager cacheManager;
+
     @Override
-    public Map<Long, BigDecimal> calculateOvertimeSalaryForEachEmployee(int year, int month) {
+    public boolean employeeExists(String employeeCode) {
+        return employeeRepositories.findByEmployeeCode(employeeCode) != null;
+    }
+
+    @Override
+    public boolean employeeDataExists(String employeeCode, int year, int month) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = LocalDate.of(year, month, YearMonth.of(year, month).lengthOfMonth());
+        List<Attendance> attendances = attendanceRepositories.findByEmployee_EmployeeCodeAndDateBetween(employeeCode, startDate, endDate);
+        return !attendances.isEmpty();
+    }
+
+
+    @Override
+    public Map<String, BigDecimal> calculateOvertimeSalaryForEachEmployee(int year, int month) {
         List<Employee> employees = employeeRepositories.findAll();
-        Map<Long, BigDecimal> overtimeSalaries = new HashMap<>();
+        Map<String, BigDecimal> overtimeSalaries = new HashMap<>();
 
         for (Employee employee : employees) {
-            Long employeeId = employee.getId();
-            BigDecimal monthlySalary = getMonthlySalary(employeeId);
-            Long totalOvertimeHours = getTotalOvertimeHours(employeeId, year, month);
+            String employeeCode = employee.getEmployeeCode();
+            BigDecimal monthlySalary = getMonthlySalary(employeeCode);
+            Long totalOvertimeHours = getTotalOvertimeHours(employeeCode, year, month);
+            BigDecimal totalAllowance = allowanceService.getTotalAllowance(employeeCode);
 
-            BigDecimal overtimeSalary = calculateOvertimeSalary(monthlySalary, totalOvertimeHours);
-            overtimeSalaries.put(employeeId, overtimeSalary);
+            if (monthlySalary == null || totalOvertimeHours == null || totalAllowance == null) {
+                continue;
+            }
+
+            BigDecimal overtimeSalary = calculateOvertimeSalary(monthlySalary, totalOvertimeHours, totalAllowance);
+            overtimeSalaries.put(employeeCode, overtimeSalary);
         }
 
         return overtimeSalaries;
     }
-    @Override
-    public Long getTotalOvertimeHours(Long employeeId, int year, int month) {
-        List<Attendance> attendances = attendanceRepositories.findByEmployeeIdAndDateBetween(
-                employeeId,
-                LocalDate.of(year, month, 1),
-                LocalDate.of(year, month, YearMonth.of(year, month).lengthOfMonth())
-        );
-        return attendances.stream()
-                .mapToLong(Attendance::getOverTime)
-                .sum();
+
+    public BigDecimal calculateOvertimeSalaryForEmployee(String employeeCode, int year, int month) {
+        BigDecimal monthlySalary = getMonthlySalary(employeeCode);
+        Long totalOvertimeHours = getTotalOvertimeHours(employeeCode, year, month);
+        BigDecimal totalAllowance = allowanceService.getTotalAllowance(employeeCode);
+
+        if (monthlySalary == null || totalOvertimeHours == null || totalAllowance == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return calculateOvertimeSalary(monthlySalary, totalOvertimeHours, totalAllowance);
     }
 
+    public Long getTotalOvertimeHours(String employeeCode, int year, int month) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = LocalDate.of(year, month, YearMonth.of(year, month).lengthOfMonth());
 
-    private BigDecimal calculateOvertimeSalary(BigDecimal monthlySalary, Long totalOvertimeHours) {
+        List<Attendance> attendances = attendanceRepositories.findByEmployee_EmployeeCodeAndDateBetween(employeeCode, startDate, endDate);
+        return attendances.stream().mapToLong(Attendance::getOverTime).sum();
+    }
+
+    private BigDecimal calculateOvertimeSalary(BigDecimal monthlySalary, Long totalOvertimeHours, BigDecimal totalAllowance) {
         BigDecimal workDaysPerMonth = BigDecimal.valueOf(26);
         BigDecimal workHoursPerDay = BigDecimal.valueOf(8);
 
-        BigDecimal hourlyRate = monthlySalary.divide(workDaysPerMonth, 2, RoundingMode.HALF_UP)
-                .divide(workHoursPerDay, 2, RoundingMode.HALF_UP);
+        BigDecimal hourlyRate = (monthlySalary.add(totalAllowance))
+                .divide(workDaysPerMonth, 0, RoundingMode.DOWN)
+                .divide(workHoursPerDay, 0, RoundingMode.DOWN);
 
-        return hourlyRate.multiply(BigDecimal.valueOf(totalOvertimeHours));
+        return hourlyRate.multiply(BigDecimal.valueOf(totalOvertimeHours)).multiply(BigDecimal.valueOf(1.5));
     }
 
-    private BigDecimal getMonthlySalary(Long employeeId) {
-        Employee employee = employeeRepositories.findById(employeeId).orElse(null);
+//    @Override
+//    public Long getTotalOvertimeHours(String employeeCode, int year, int month) {
+//        LocalDate startDate = LocalDate.of(year, month, 1);
+//        LocalDate endDate = LocalDate.of(year, month, YearMonth.of(year, month).lengthOfMonth());
+//
+//        List<Attendance> attendances = attendanceRepositories.findByEmployee_EmployeeCodeAndDateBetween(employeeCode, startDate, endDate);
+//        return attendances.stream().mapToLong(Attendance::getOverTime).sum();
+//    }
+//
+//    private BigDecimal calculateOvertimeSalary(BigDecimal monthlySalary, Long totalOvertimeHours, BigDecimal totalAllowance) {
+//        BigDecimal workDaysPerMonth = BigDecimal.valueOf(26);
+//        BigDecimal workHoursPerDay = BigDecimal.valueOf(8);
+//
+//        BigDecimal hourlyRate = (monthlySalary.add(totalAllowance))
+//                .divide(workDaysPerMonth, 0, RoundingMode.DOWN)
+//                .divide(workHoursPerDay, 0, RoundingMode.DOWN);
+//
+//        return hourlyRate.multiply(BigDecimal.valueOf(totalOvertimeHours)).multiply(BigDecimal.valueOf(1.5));
+//    }
+
+//    public BigDecimal calculateOvertimeSalaryForEmployee(String employeeCode, int year, int month) {
+//        Employee employee = employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
+//        BigDecimal monthlySalary = getMonthlySalary(employeeCode);
+//        Long totalOvertimeHours = getTotalOvertimeHours(employeeCode, year, month);
+//        BigDecimal totalAllowance = allowanceService.calculateTotalAllowanceAmountForEachEmployee().get(employeeCode);
+//
+//        if (monthlySalary == null || totalOvertimeHours == null || totalAllowance == null) {
+//            return null;
+//        }
+//
+//        return calculateOvertimeSalary(monthlySalary, totalOvertimeHours, totalAllowance);
+//    }
+//
+
+    private BigDecimal getMonthlySalary(String employeeCode) {
+        Employee employee = employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
         if (employee != null) {
             Contract contract = employee.getContract();
             if (contract != null) {
                 return contract.getMonthlySalary();
             }
         }
-        return BigDecimal.ZERO; // Hoặc giá trị mặc định khác
+        return BigDecimal.ZERO;
+    }
+
+    public BigDecimal calculateSocialInsurance(String employeeCode) {
+        BigDecimal monthlySalary = getMonthlySalary(employeeCode);
+        return monthlySalary.multiply(BigDecimal.valueOf(0.08));
+    }
+
+    public BigDecimal calculateHealthInsurance(String employeeCode) {
+        BigDecimal monthlySalary = getMonthlySalary(employeeCode);
+        return monthlySalary.multiply(BigDecimal.valueOf(0.015));
+    }
+
+    public BigDecimal calculateUnemploymentInsurance(String employeeCode) {
+        BigDecimal monthlySalary = getMonthlySalary(employeeCode);
+        return monthlySalary.multiply(BigDecimal.valueOf(0.01));
     }
 
     @Override
-    public Map<Long, BigDecimal> calculateInsuranceForEachEmployee() {
-        List<Employee> employees = employeeRepositories.findAll();
-        Map<Long, BigDecimal> insuranceAmounts = new HashMap<>();
+    public BigDecimal getTotalInsurance(String employeeCode) {
+        BigDecimal socialInsurance = calculateSocialInsurance(employeeCode);
+        BigDecimal healthInsurance = calculateHealthInsurance(employeeCode);
+        BigDecimal unemploymentInsurance = calculateUnemploymentInsurance(employeeCode);
 
-        for (Employee employee : employees) {
-            Long employeeId = employee.getId();
-            BigDecimal monthlySalary = getMonthlySalary(employeeId);
-
-            BigDecimal socialInsurance = monthlySalary.multiply(BigDecimal.valueOf(0.08)); // 8% for social insurance
-            BigDecimal healthInsurance = monthlySalary.multiply(BigDecimal.valueOf(0.015)); // 1.5% for health insurance
-            BigDecimal unemploymentInsurance = monthlySalary.multiply(BigDecimal.valueOf(0.01)); // 1% for unemployment insurance
-
-            BigDecimal totalInsurance = socialInsurance.add(healthInsurance).add(unemploymentInsurance);
-            totalInsurance = totalInsurance.setScale(0, RoundingMode.DOWN);
-            insuranceAmounts.put(employeeId, totalInsurance);
-        }
-        return insuranceAmounts;
+        return socialInsurance.add(healthInsurance).add(unemploymentInsurance);
     }
+
+    public Map<String, BigDecimal> getAllowances(String employeeCode) {
+        List<Allowance> allowances = allowanceService.getAllowancesForEmployee(employeeCode);
+
+        Map<String, BigDecimal> allowanceMap = new HashMap<>();
+        for (Allowance allowance : allowances) {
+            allowanceMap.put(allowance.getAllowanceName(), allowance.getAllowanceAmount());
+        }
+
+        return allowanceMap;
+    }
+//
+//    public Map<String, BigDecimal> getAllowances(String employeeCode) {
+//        List<EmployeeAllowanceDTO> allowances = allowanceService.getEmployeeAllowances(employeeCode);
+//
+//        Map<String, BigDecimal> allowanceMap = new HashMap<>();
+//        for (EmployeeAllowanceDTO allowance : allowances) {
+//            allowanceMap.put(allowance.getAllowanceName(), allowance.getAllowanceAmount());
+//        }
+//
+//        return allowanceMap;
+//    }
     // luong net - sau thue
     @Override
-    public BigDecimal calculateNetSalary(Long employeeId, int year, int month) {
-        BigDecimal overTimeSalary = calculateOvertimeSalaryForEachEmployee(year, month).get(employeeId);
-        BigDecimal netSalary = calculateTotalIncome(employeeId, year, month).subtract(overTimeSalary);
-        return netSalary;
-    }
-    // luong truoc thue
-    @Override
-    public BigDecimal calculateTotalIncome(Long employeeId, int year, int month) {
-        BigDecimal monthlySalary = getMonthlySalary(employeeId);
-        BigDecimal totalAllowance = allowanceService.calculateTotalAllowanceAmountForEachEmployee().get(employeeId);
-        int workingDaysInMonth = attendanceService.calculateWorkdays(year, month).get(employeeId); // Sử dụng phương thức đã chỉnh sửa
-        BigDecimal insuranceInMonth = calculateInsuranceForEachEmployee().get(employeeId);
-        BigDecimal totalIncome = (monthlySalary.add(totalAllowance)).divide(BigDecimal.valueOf(26), 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(workingDaysInMonth)).subtract(insuranceInMonth);
-        return totalIncome;
-    }
+    public BigDecimal calculateNetSalary(String employeeCode, int year, int month) {
+        BigDecimal overTimeSalary = calculateOvertimeSalaryForEmployee(employeeCode, year, month);
+        BigDecimal incomeTax = calculateIncomeTaxForEmployee(employeeCode, year, month);
+        BigDecimal totalIncome = calculateTotalIncome(employeeCode, year, month);
 
-    @Override
-    public Map<Long, BigDecimal> calculateIncomeTaxForEachEmployee(int year, int month) {
-        List<Employee> employees = employeeRepositories.findAll();
-        Map<Long, BigDecimal> incomeTaxes = new HashMap<>();
-
-        for (Employee employee : employees) {
-            Long employeeId = employee.getId();
-            BigDecimal taxableIncome = calculateTotalIncome(employeeId, year, month);
-            boolean isResident = employee.getPersonalInfo().isResident();
-            Contract contract = employee.getContract();
-            BigDecimal incomeTax = calculateIncomeTax(taxableIncome, isResident, contract.getStartDate(), contract.getEndDate());
-            incomeTaxes.put(employeeId, incomeTax);
+        if (overTimeSalary == null || incomeTax == null || totalIncome == null) {
+            return null;
         }
 
-        return incomeTaxes;
+        return totalIncome.subtract(incomeTax).add(overTimeSalary);
     }
 
+
+    // luong truoc thue moi empl
+    @Override
+    public BigDecimal calculateTotalIncome(String employeeCode, int year, int month) {
+        BigDecimal monthlySalary = getMonthlySalary(employeeCode);
+        BigDecimal totalAllowance = allowanceService.getTotalAllowance(employeeCode);
+        Integer workingDaysInMonth = attendanceService.calculateWorkdays(year, month).get(employeeCode);
+        BigDecimal insuranceInMonth = getTotalInsurance(employeeCode);
+
+        if (monthlySalary == null || totalAllowance == null || workingDaysInMonth == null || insuranceInMonth == null) {
+            return null;
+        }
+
+        return (monthlySalary.add(totalAllowance)).divide(BigDecimal.valueOf(26), 0, RoundingMode.DOWN)
+                .multiply(BigDecimal.valueOf(workingDaysInMonth)).subtract(insuranceInMonth);
+    }
+
+    // luong truoc thue all
+
+    @Override
+    public BigDecimal calculateIncomeTaxForEmployee(String employeeCode, int year, int month) {
+        Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
+        if (employee == null) {
+            return BigDecimal.ZERO;
+        }
+
+        Contract contract = employee.getContract();
+        if (contract == null) {
+            return BigDecimal.ZERO;
+        }
+
+        LocalDate startDate = contract.getStartDate();
+        if (startDate == null || startDate.getYear() > year || (startDate.getYear() == year && startDate.getMonthValue() > month)) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal taxableIncome = calculateTotalIncome(employeeCode, year, month);
+        if (taxableIncome == null) {
+            return BigDecimal.ZERO;
+        }
+
+        boolean isResident = employee.getPersonalInfo().isResident();
+        return calculateIncomeTax(taxableIncome, isResident, startDate, contract.getEndDate());
+    }
+
+    @Override
+    public Map<String, BigDecimal> calculateIncomeTaxForEachEmployee(int year, int month) {
+        List<Employee> employees = employeeRepositories.findAll();
+        Map<String, BigDecimal> incomeTaxes = new HashMap<>();
+
+        for (Employee employee : employees) {
+            String employeeCode = employee.getEmployeeCode();
+            Contract contract = employee.getContract();
+            if (contract == null) {
+                continue;
+            }
+            LocalDate startDate = contract.getStartDate();
+            if (startDate == null || startDate.getYear() > year || (startDate.getYear() == year && startDate.getMonthValue() > month)) {
+                continue;
+            }
+            BigDecimal taxableIncome = calculateTotalIncome(employeeCode, year, month);
+            if (taxableIncome == null) {
+                continue;
+            }
+            boolean isResident = employee.getPersonalInfo().isResident();
+            BigDecimal incomeTax = calculateIncomeTax(taxableIncome, isResident, startDate, contract.getEndDate());
+            incomeTaxes.put(employeeCode, incomeTax);
+        }
+        return incomeTaxes;
+    }
 
     private BigDecimal calculateIncomeTax(BigDecimal taxableIncome, boolean isResident, LocalDate startDate, LocalDate endDate) {
         long durationInMonths = ChronoUnit.MONTHS.between(startDate, endDate);
@@ -189,27 +332,109 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         return incomeTax;
         }
 
-    @Override
-    public EmployeeSalary getEmployeeSalaryDetails(Long employeeId, int year, int month) {
-            Employee employee = employeeRepositories.findById(employeeId)
-                    .orElseThrow(() -> new RuntimeException("Employee not found with id " + employeeId));
+    public BigDecimal calculateTotalDeductionsForEmployee(String employeeCode, int year, int month) {
+        BigDecimal totalInsurance = getTotalInsurance(employeeCode);
+        BigDecimal incomeTax = calculateIncomeTaxForEmployee(employeeCode, year, month);
 
-        BigDecimal monthlySalary = getMonthlySalary(employeeId);
-        BigDecimal totalAllowance = allowanceService.calculateTotalAllowanceAmountForEachEmployee().get(employeeId);
-        BigDecimal incomeTax = calculateIncomeTaxForEachEmployee(year, month).get(employeeId);
-        int workingDaysInMonth = attendanceService.calculateWorkdays(year, month).get(employeeId);
-        BigDecimal totalIncome = calculateTotalIncome(employeeId, year, month);
+        if (totalInsurance == null || incomeTax == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return totalInsurance.add(incomeTax);
+    }
+
+
+    public Map<String, BigDecimal> calculateTotalDeductionsForEachEmployee(int year, int month) {
+        List<Employee> employees = employeeRepositories.findAll();
+        Map<String, BigDecimal> totalDeductionsMap = new HashMap<>();
+
+        for (Employee employee : employees) {
+            String employeeCode = employee.getEmployeeCode();
+            BigDecimal totalDeductions = calculateTotalDeductionsForEmployee(employeeCode, year, month);
+            totalDeductionsMap.put(employeeCode, totalDeductions);
+        }
+
+        return totalDeductionsMap;
+    }
+
+    @Override
+    public void calculateAndCacheEmployeeSalariesForMonth(int year, int month) {
+        // Tính toán dữ liệu cho tất cả nhân viên và lưu vào bộ nhớ cache
+        List<Employee> employees = employeeRepositories.findAll();
+        for (Employee employee : employees) {
+            EmployeeSalary details = calculateEmployeeSalaryForMonth(employee.getEmployeeCode(), year, month);
+            if (details != null) {
+                String cacheKey = generateCacheKey(employee.getEmployeeCode(), year, month);
+                cacheManager.getCache("employeeSalaries").put(cacheKey, details);
+            }
+        }
+    }
+    @Override
+    public EmployeeSalary getEmployeeSalaryDetails(String employeeCode, int year, int month) {
+        Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
+        if (employee == null) {
+            return null; // Trả về null nếu nhân viên không tồn tại
+        }
+        String cacheKey = generateCacheKey(employeeCode, year, month);
+        Cache.ValueWrapper valueWrapper = cacheManager.getCache("employeeSalaries").get(cacheKey);
+        if (valueWrapper != null) {
+            return (EmployeeSalary) valueWrapper.get();
+        } else {
+            EmployeeSalary details = calculateEmployeeSalaryForMonth(employeeCode, year, month);
+            if (details != null) {
+                cacheManager.getCache("employeeSalaries").put(cacheKey, details);
+            }
+            return details;
+        }
+    }
+
+    public EmployeeSalary calculateEmployeeSalaryForMonth(String employeeCode, int year, int month) {
+        Employee employee = employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
+        BigDecimal monthlySalary = getMonthlySalary(employeeCode);
+        BigDecimal totalAllowance = allowanceService.getTotalAllowance(employeeCode);
+        BigDecimal incomeTax = calculateIncomeTaxForEmployee(employeeCode, year, month);
+        Map<String, Integer> workingDaysInMonth = attendanceService.calculateWorkdaysForEachEmployee(employeeCode, year, month);
+        BigDecimal totalIncome = calculateTotalIncome(employeeCode, year, month);
+        BigDecimal socialInsurance = calculateSocialInsurance(employeeCode);
+        BigDecimal healthInsurance = calculateHealthInsurance(employeeCode);
+        BigDecimal unemploymentInsurance = calculateUnemploymentInsurance(employeeCode);
+        BigDecimal totalInsurance = getTotalInsurance(employeeCode);
+        BigDecimal totalDeductions = calculateTotalDeductionsForEmployee(employeeCode, year, month);
+        Map<String, BigDecimal> allowances = getAllowances(employeeCode);
+        BigDecimal overTimeSalary = calculateOvertimeSalaryForEmployee(employeeCode, year, month);
+        Long totalOverTimeHours = getTotalOvertimeHours(employeeCode, year, month);
+        BigDecimal netSalary = calculateNetSalary(employeeCode, year, month);
+
+        if (monthlySalary == null || totalAllowance == null || incomeTax == null || workingDaysInMonth == null || totalIncome == null || socialInsurance == null || healthInsurance == null || unemploymentInsurance == null || totalInsurance == null || allowances == null || overTimeSalary == null || totalOverTimeHours == null || netSalary == null) {
+            return null; // Return null if any value is null
+        }
 
         EmployeeSalary details = new EmployeeSalary();
+        details.setId(employee.getId());
         details.setEmployeeName(employee.getFullName());
         details.setEmployeeCode(employee.getEmployeeCode());
+        details.setPositionName(employee.getPositionName());
+        details.setDepartmentName(employee.getDepartmentName());
         details.setMonthlySalary(monthlySalary);
         details.setTotalAllowance(totalAllowance);
-        details.setIncomeTax(incomeTax);
-        details.setWorkingDaysInMonth(workingDaysInMonth);
-        details.setTotalIncome(totalIncome);
-
+        details.setIncomeTax(incomeTax); // thue
+        int totalWorkingDays = workingDaysInMonth.values().stream().mapToInt(Integer::intValue).sum();
+        details.setWorkingDaysInMonth(totalWorkingDays);
+        details.setTotalIncome(totalIncome); // luong truoc thue
+        details.setSocialInsurance(socialInsurance);
+        details.setHealthInsurance(healthInsurance);
+        details.setUnemploymentInsurance(unemploymentInsurance);
+        details.setTotalInsurance(totalInsurance);
+        details.setTotalDeductions(totalDeductions);
+        details.setAllowances(allowances);
+        details.setTotalOvertimeHours(totalOverTimeHours);
+        details.setOverTimeSalary(overTimeSalary);
+        details.setNetSalary(netSalary);
         return details;
+    }
+
+    private String generateCacheKey(String employeeCode, int year, int month) {
+        return employeeCode + "-" + year + "-" + month;
     }
 
     @Override
@@ -218,58 +443,14 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         List<EmployeeSalary> allDetails = new ArrayList<>();
 
         for (Employee employee : employees) {
-            Long employeeId = employee.getId();
-            EmployeeSalary details = getEmployeeSalaryDetails(employeeId, year, month);
-            allDetails.add(details);
+            String employeeCode = employee.getEmployeeCode();
+            EmployeeSalary details = getEmployeeSalaryDetails(employeeCode, year, month);
+            if (details != null) {
+                allDetails.add(details);
+            }
         }
 
         return allDetails;
     }
-
-
-//    public void calculateTax(Long employeeId) {
-//        BigDecimal monthlySalary = getMonthlySalary(employeeId);
-//        BigDecimal taxableIncome = BigDecimal.valueOf(monthlySalary).add(totalAllowance);
-//        BigDecimal taxRate;
-//        BigDecimal taxDeduction;
-//        if (isResident) {
-//            if (contractDuration >= 3) {
-//                if (taxableIncome.compareTo(BigDecimal.valueOf(5000000)) <= 0) {
-//                    taxRate = new BigDecimal("0.05");
-//                    taxDeduction = BigDecimal.ZERO;
-//                } else if (taxableIncome.compareTo(BigDecimal.valueOf(10000000)) <= 0) {
-//                    taxRate = new BigDecimal("0.1");
-//                    taxDeduction = BigDecimal.valueOf(250000);
-//                } else if (taxableIncome.compareTo(BigDecimal.valueOf(18000000)) <= 0) {
-//                    taxRate = new BigDecimal("0.15");
-//                    taxDeduction = BigDecimal.valueOf(750000);
-//                } else if (taxableIncome.compareTo(BigDecimal.valueOf(32000000)) <= 0) {
-//                    taxRate = new BigDecimal("0.2");
-//                    taxDeduction = BigDecimal.valueOf(1650000);
-//                } else if (taxableIncome.compareTo(BigDecimal.valueOf(52000000)) <= 0) {
-//                    taxRate = new BigDecimal("0.25");
-//                    taxDeduction = BigDecimal.valueOf(3250000);
-//                } else if (taxableIncome.compareTo(BigDecimal.valueOf(80000000)) <= 0) {
-//                    taxRate = new BigDecimal("0.3");
-//                    taxDeduction = BigDecimal.valueOf(5850000);
-//                } else {
-//                    taxRate = new BigDecimal("0.35");
-//                    taxDeduction = BigDecimal.valueOf(9850000);
-//                }
-//            } else {
-//                if (taxableIncome.compareTo(BigDecimal.valueOf(2000000)) > 0) {
-//                    taxRate = new BigDecimal("0.1");
-//                } else {
-//                    taxRate = BigDecimal.ZERO;
-//                }
-//                taxDeduction = BigDecimal.ZERO;
-//            }
-//        } else {
-//            taxRate = new BigDecimal("0.2");
-//            taxDeduction = BigDecimal.ZERO;
-//        }
-//        tax = taxableIncome.multiply(taxRate).subtract(taxDeduction);
-//    }
-
 
     }

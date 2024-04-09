@@ -1,21 +1,20 @@
 package com.hrm.Human.Resource.Management.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.hrm.Human.Resource.Management.dto.EmployeeContractDTO;
 import com.hrm.Human.Resource.Management.entity.*;
 import com.hrm.Human.Resource.Management.repositories.*;
 import com.hrm.Human.Resource.Management.response.EmployeeResponse;
+import com.hrm.Human.Resource.Management.response.ResourceNotFoundException;
 import com.hrm.Human.Resource.Management.service.EmployeeService;
+import com.hrm.Human.Resource.Management.service.PositionService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -43,8 +42,10 @@ public class EmployeeServiceImpl implements EmployeeService {
     private AttendanceRepositories attendanceRepositories;
 
     @Autowired
-    private ImageStorageService imageStorageService;
+    private ContractRepositories contractRepositories;
 
+    @Autowired
+    private PositionService positionService;
     @Override
     public Optional<Employee> searchEmployee(String keyword) {
         return employeeRepositories.findByFullNameContaining(keyword);
@@ -57,7 +58,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Employee getEmployeeByEmployeeCode(String employeeCode) {
-        return employeeRepositories.findByEmployeeCode(employeeCode);
+        return employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
     }
 
     @Override
@@ -79,132 +80,88 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
 @Override
-@Transactional
-public ResponseEntity<?> addEmployee(String employeeString, MultipartFile file) {
-
-    System.out.println("Adding employee: " + employeeString);
-    ObjectMapper objectMapper = new ObjectMapper();
-    objectMapper.registerModule(new JavaTimeModule());
-
-    Employee employee;
-    try {
-        employee = objectMapper.readValue(employeeString, Employee.class);
-    } catch (JsonProcessingException e) {
-        System.out.println("Error parsing JSON: " + e.getMessage());
-        System.out.println("Invalid JSON: " + employeeString);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid employee data.");
+public Employee saveEmployee(Employee employee) {
+    String identityCardNumber = employee.getPersonalInfo().getIdentityCardNumber();
+    Employee existingEmployee = findEmployeeByIdentityCardNumber(identityCardNumber);
+    if (existingEmployee != null) {
+        throw new RuntimeException("Employee with Identity Card Number " + identityCardNumber + " already exists.");
     }
-
-        Optional<PersonalInfo> existingPersonalInfo = personalInfoRepositories.findByIdentityCardNumber(employee.getPersonalInfo().getIdentityCardNumber());
-        if (existingPersonalInfo.isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("The employee already exists.");
-        }
-        try {
-            // Handle file upload
-            if (file != null && !file.isEmpty()) {
-                String fileName = imageStorageService.storeFile(file);
-                employee.setImage(fileName);
-            }
-
-            Position position = positionRepositories.findByPositionName(employee.getPositionName());
-            if (position == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Position does not exist.");
-            }
-            employee.setPosition(position);
-
-            Department  department = departmentRepositories.findByDepartmentName(employee.getDepartmentName());
-            if (department == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Department does not exist.");
-            }
+    String departmentName = employee.getDepartmentName();
+    if (departmentName != null) {
+        Department department = departmentRepositories.findByDepartmentName(departmentName);
+        if (department != null) {
             employee.setDepartment(department);
-
-            PersonalInfo personalInfo = employee.getPersonalInfo();
-            if (personalInfo == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("PersonalInfo must not be null.");
-            }
-            PersonalInfo savedPersonalInfo = personalInfoRepositories.save(personalInfo);
-            employee.setPersonalInfo(savedPersonalInfo);
-
-            Employee savedEmployee = employeeRepositories.save(employee);
-
-            return new ResponseEntity<>(savedEmployee, HttpStatus.CREATED);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        } else {
+            throw new RuntimeException("Department with name " + departmentName + " does not exist.");
         }
     }
 
+
+    String positionName = employee.getPositionName();
+    if (positionName != null) {
+        Position position = positionRepositories.findByPositionName(positionName);
+        if (position != null) {
+            employee.setPosition(position);
+        } else {
+            throw new RuntimeException("Position with name " + positionName + " does not exist.");
+        }
+    }
+    return employeeRepositories.save(employee);
+}
     @Override
-    public ResponseEntity<?> updateEmployee(Long id, String employeeString, MultipartFile file) {
-        Optional<Employee> existingEmployeeOpt = employeeRepositories.findById(id);
-        if (!existingEmployeeOpt.isPresent()) {
+    public ResponseEntity<?> updateEmployee(Long id, Employee employeeDetails) {
+        Optional<Employee> optionalEmployee = employeeRepositories.findById(id);
+        if (!optionalEmployee.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Employee not found.");
         }
-        Employee existingEmployee = existingEmployeeOpt.get();
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        Employee updatedEmployee;
-        try {
-            updatedEmployee = objectMapper.readValue(employeeString, Employee.class);
-        } catch (JsonProcessingException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid employee data.");
-        }
-        if (file != null && !file.isEmpty()) {
-            String fileName = imageStorageService.storeFile(file);
-            existingEmployee.setImage(fileName);
-        }
-        existingEmployee.setFullName(updatedEmployee.getFullName());
-        existingEmployee.setPhoneNumber(updatedEmployee.getPhoneNumber());
-        existingEmployee.setWorkEmail(updatedEmployee.getWorkEmail());
-        existingEmployee.setNameContactER(updatedEmployee.getNameContactER());
-        existingEmployee.setPhoneContactER(updatedEmployee.getPhoneContactER());
-        // existingEmployee.setIsDeleted(updatedEmployee.getIsDeleted());
-
-        // Find the updated Department and Position in the database
-        Department updatedDepartment = departmentRepositories.findByDepartmentName(updatedEmployee.getDepartmentName());
-        if (updatedDepartment == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Department does not exist.");
-        }
-        Position updatedPosition = positionRepositories.findByPositionName(updatedEmployee.getPositionName());
-        if (updatedPosition == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Position does not exist.");
-        }
-
-        existingEmployee.setDepartment(updatedDepartment);
-        existingEmployee.setPosition(updatedPosition);
-        existingEmployee.setDepartmentName(updatedDepartment.getDepartmentName());
-        existingEmployee.setPositionName(updatedPosition.getPositionName());
-
-        // Update PersonalInfo
-        PersonalInfo existingPersonalInfo = existingEmployee.getPersonalInfo();
-        PersonalInfo updatedPersonalInfo = updatedEmployee.getPersonalInfo();
-
-        existingPersonalInfo.setBirthPlace(updatedPersonalInfo.getBirthPlace());
-        existingPersonalInfo.setIsResident(updatedPersonalInfo.getIsResident());
-        existingPersonalInfo.setSex(updatedPersonalInfo.getSex());
-        existingPersonalInfo.setIdentityCardNumber(updatedPersonalInfo.getIdentityCardNumber());
-
-        existingPersonalInfo.setBirthDate(updatedPersonalInfo.getBirthDate());
-        existingPersonalInfo.setPersonalEmail(updatedPersonalInfo.getPersonalEmail());
-        existingPersonalInfo.setCertificateLevel(updatedPersonalInfo.getCertificateLevel());
-        existingPersonalInfo.setFieldOfStudy(updatedPersonalInfo.getFieldOfStudy());
-        existingPersonalInfo.setSchool(updatedPersonalInfo.getSchool());
-        existingPersonalInfo.setNationality(updatedPersonalInfo.getNationality());
-        try {
-            if (file != null && !file.isEmpty()) {
-                String fileName = imageStorageService.storeFile(file);
-                existingEmployee.setImage(fileName);
+        Employee employee = optionalEmployee.get();
+        PersonalInfo personalInfo = employee.getPersonalInfo();
+        PersonalInfo newPersonalInfo = employeeDetails.getPersonalInfo();
+        String newIdentityCardNumber = newPersonalInfo.getIdentityCardNumber();
+        if (newIdentityCardNumber != null && !personalInfo.getIdentityCardNumber().equals(newIdentityCardNumber)) {
+            Employee existingEmployee = findEmployeeByIdentityCardNumber(newIdentityCardNumber);
+            if (existingEmployee != null) {
+                throw new RuntimeException("Identity Card Number " + newIdentityCardNumber + " already exists.");
+            } else {
+                personalInfo.setIdentityCardNumber(newIdentityCardNumber);
+                personalInfo.setFieldOfStudy(newPersonalInfo.getFieldOfStudy());
             }
-
-            Employee savedEmployee = employeeRepositories.save(existingEmployee);
-
-            return new ResponseEntity<>(savedEmployee, HttpStatus.CREATED);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+        personalInfo.setNationality(newPersonalInfo.getNationality());
+        personalInfo.setBirthDate(newPersonalInfo.getBirthDate());
+        personalInfo.setFieldOfStudy(newPersonalInfo.getFieldOfStudy());
+        personalInfo.setPersonalEmail(newPersonalInfo.getPersonalEmail());
+        personalInfo.setBirthPlace(newPersonalInfo.getBirthPlace());
+        personalInfo.setSchool(newPersonalInfo.getSchool());
 
+        employee.setFullName(employeeDetails.getFullName());
+        employee.setPhoneNumber(employeeDetails.getPhoneNumber());
+        employee.setImage(employeeDetails.getImage());
+        employee.setDepartmentName(employeeDetails.getDepartmentName());
+        employee.setPositionName(employeeDetails.getPositionName());
+
+        String departmentName = employeeDetails.getDepartmentName();
+        if (departmentName != null) {
+            Department department = departmentRepositories.findByDepartmentName(departmentName);
+            if (department != null) {
+                employee.setDepartment(department);
+            } else {
+                throw new RuntimeException("Department with name " + departmentName + " does not exist.");
+            }
+        }
+        String positionName = employeeDetails.getPositionName();
+        if (positionName != null) {
+            Position position = positionRepositories.findByPositionName(positionName);
+            if (position != null) {
+                employee.setPosition(position);
+            } else {
+                throw new RuntimeException("Position with name " + positionName + " does not exist.");
+            }
+        }
+        employee = employeeRepositories.save(employee);
+
+        return new ResponseEntity<>(employee, HttpStatus.OK);
+    }
 
     @Override
     public ResponseEntity<EmployeeResponse> deleteEmployee(Long id) {
@@ -251,68 +208,169 @@ public ResponseEntity<?> addEmployee(String employeeString, MultipartFile file) 
                 new EmployeeResponse("failed", "Cannot find employee to delete", "")
         );
     }
+    @Override
+    public Employee findEmployeeByIdentityCardNumber(String identityCardNumber) {
+        return employeeRepositories.findEmployeeByPersonalInfoIdentityCardNumber(identityCardNumber);
+    }
+//    @Override
+//    public EmployeeAllowance create(EmployeeAllowance employeeAllowance) {
+//        return employeeAllowanceRepositories.save(employeeAllowance);
+//    }
+//
+//    @Override
+//    public EmployeeAllowance update(String employeeCode, EmployeeAllowance employeeAllowance) {
+//        List<EmployeeAllowance> existingEmployeeAllowances = employeeAllowanceRepositories.findByEmployee_EmployeeCode(employeeCode);
+//        if (!existingEmployeeAllowances.isEmpty()) {
+//            // Assuming you want to update the first EmployeeAllowance in the list
+//            EmployeeAllowance existingEmployeeAllowance = existingEmployeeAllowances.get(0);
+//            BeanUtils.copyProperties(employeeAllowance, existingEmployeeAllowance, "employee");
+//            return employeeAllowanceRepositories.save(existingEmployeeAllowance);
+//        } else {
+//            throw new ResourceNotFoundException("EmployeeAllowance not found with employeeCode " + employeeCode);
+//        }
+//    }
+//
+//    @Override
+//    public void delete(String employeeCode) {
+//        List<EmployeeAllowance> existingEmployeeAllowances = employeeAllowanceRepositories.findByEmployee_EmployeeCode(employeeCode);
+//        if (!existingEmployeeAllowances.isEmpty()) {
+//            // Assuming you want to delete the first EmployeeAllowance in the list
+//            EmployeeAllowance existingEmployeeAllowance = existingEmployeeAllowances.get(0);
+//            employeeAllowanceRepositories.delete(existingEmployeeAllowance);
+//        } else {
+//            throw new ResourceNotFoundException("EmployeeAllowance not found with employeeCode " + employeeCode);
+//        }
+//    }
+
+
 
     @Override
-    public boolean existsByIdentityCardNumber(String identityCardNumber) {
-        return employeeRepositories.existsByPersonalInfoIdentityCardNumber(identityCardNumber);
+    public List<EmployeeContractDTO> getAllEmployeeContracts() {
+        List<Employee> employees = employeeRepositories.findAll();
+        return employees.stream()
+                .map(employee -> {
+                    Contract contract = employee.getContract();
+                    if (contract == null) {
+                        // Nếu không tìm thấy hợp đồng, bỏ qua nhân viên này
+                        return null;
+                    }
+                    return new EmployeeContractDTO(
+                            employee.getId(),
+                            employee.getEmployeeCode(),
+                            employee.getFullName(),
+                            employee.getDepartmentName(),
+                            employee.getPositionName(),
+                            contract.getStartDate(),
+                            contract.getEndDate(),
+                            contract.getSignDate(),
+                            contract.getNoteContract(),
+                            contract.getNumberOfSignatures(),
+                            contract.getContractCode(),
+                            contract.getMonthlySalary());
+                })
+                .filter(Objects::nonNull) // Loại bỏ các giá trị null
+                .collect(Collectors.toList());
     }
 
     @Override
-    public ResponseEntity<List<Allowance>> getAllowances(Long employeeId) {
-        Optional<Employee> employee = employeeRepositories.findById(employeeId);
-        if (employee.isPresent()) {
-            List<Allowance> allowances = employee.get().getEmployeeAllowances().stream().map(EmployeeAllowance::getAllowance).collect(Collectors.toList());
-            return ResponseEntity.ok(allowances);
-        } else {
-            return ResponseEntity.notFound().build();
+    public EmployeeContractDTO createContract(String employeeCode, Contract contract) {
+        Employee employee = employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
+        if (employee == null) {
+            throw new ResourceNotFoundException("Employee not found");
+        };
+        Contract existingContract = employee.getContract();
+        if (existingContract != null) {
+            throw new IllegalStateException("Contract already exists for this employee");
         }
+        contract.setEmployee(employee);
+        contract = contractRepositories.save(contract);
+
+        employee.setContract(contract);
+        employeeRepositories.save(employee);
+
+        return new EmployeeContractDTO(
+                employee.getId(),
+                employee.getEmployeeCode(),
+                employee.getFullName(),
+                employee.getDepartmentName(),
+                employee.getPositionName(),
+                employee.getContract().getStartDate(),
+                employee.getContract().getEndDate(),
+                employee.getContract().getSignDate(),
+                employee.getContract().getNoteContract(),
+                employee.getContract().getNumberOfSignatures(),
+                employee.getContract().getContractCode(),
+                employee.getContract().getMonthlySalary()
+        );
     }
 
     @Override
-    public ResponseEntity<Employee> addAllowance(Long employeeId, Long allowanceId, LocalDate startDate, LocalDate endDate) {
-        Optional<Employee> employee = employeeRepositories.findById(employeeId);
-        Optional<Allowance> allowance = allowanceRepositories.findById(allowanceId);
-        if (employee.isPresent() && allowance.isPresent()) {
-            EmployeeAllowance employeeAllowance = new EmployeeAllowance();
-            employeeAllowance.setEmployee(employee.get());
-            employeeAllowance.setAllowance(allowance.get());
-            employeeAllowance.setStartDate(startDate);
-            employeeAllowance.setEndDate(endDate);
-            employeeAllowanceRepositories.save(employeeAllowance);
-            return ResponseEntity.ok(employee.get());
-        } else {
-            return ResponseEntity.notFound().build();
+    public EmployeeContractDTO updateContract(String employeeCode, Contract contract) {
+        Employee employee = employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
+        if (employee == null) {
+            throw new ResourceNotFoundException("Employee not found");
         }
+        Contract existingContract = employee.getContract();
+        if (existingContract == null) {
+            throw new IllegalStateException("No contract found for this employee");
+        }
+        BeanUtils.copyProperties(contract, existingContract, "id");
+        contract = existingContract;
+
+        contract.setEmployee(employee);
+        contract = contractRepositories.save(contract);
+
+        employee.setContract(contract);
+        employeeRepositories.save(employee);
+
+        return new EmployeeContractDTO(
+                employee.getId(),
+                employee.getEmployeeCode(),
+                employee.getFullName(),
+                employee.getDepartmentName(),
+                employee.getPositionName(),
+                employee.getContract().getStartDate(),
+                employee.getContract().getEndDate(),
+                employee.getContract().getSignDate(),
+                employee.getContract().getNoteContract(),
+                employee.getContract().getNumberOfSignatures(),
+                employee.getContract().getContractCode(),
+                employee.getContract().getMonthlySalary()
+        );
     }
 
     @Override
-    public ResponseEntity<EmployeeAllowance> updateAllowance(Long employeeId, Long allowanceId, EmployeeAllowance newEmployeeAllowance) {
-        Optional<Employee> employee = employeeRepositories.findById(employeeId);
-        Optional<Allowance> allowance = allowanceRepositories.findById(allowanceId);
-        if (employee.isPresent() && allowance.isPresent()) {
-            Optional<EmployeeAllowance> employeeAllowance = employeeAllowanceRepositories.findByEmployeeAndAllowance(employee.get(), allowance.get());
-            if (employeeAllowance.isPresent()) {
-                employeeAllowance.get().setStartDate(newEmployeeAllowance.getStartDate());
-                employeeAllowance.get().setEndDate(newEmployeeAllowance.getEndDate());
-                return ResponseEntity.ok(employeeAllowanceRepositories.save(employeeAllowance.get()));
-            }
+    public EmployeeContractDTO getContract(String employeeCode) {
+        Employee employee = employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
+        if (employee == null) {
+            throw new ResourceNotFoundException("Employee not found");
         }
-        return ResponseEntity.notFound().build();
+        Contract contract = employee.getContract();
+        if (contract == null) {
+            return null;
+        }
+        return new EmployeeContractDTO(
+                employee.getId(),
+                employee.getEmployeeCode(),
+                employee.getFullName(),
+                employee.getDepartmentName(),
+                employee.getPositionName(),
+                employee.getContract().getStartDate(),
+                employee.getContract().getEndDate(),
+                employee.getContract().getSignDate(),
+                employee.getContract().getNoteContract(),
+                employee.getContract().getNumberOfSignatures(),
+                employee.getContract().getContractCode(),
+                employee.getContract().getMonthlySalary()
+        );
     }
 
     @Override
-    public ResponseEntity<Void> deleteAllowance(Long employeeId, Long allowanceId) {
-        Optional<Employee> employee = employeeRepositories.findById(employeeId);
-        Optional<Allowance> allowance = allowanceRepositories.findById(allowanceId);
-        if (employee.isPresent() && allowance.isPresent()) {
-            EmployeeAllowance employeeAllowance = employee.get().getEmployeeAllowances().stream().filter(ea -> ea.getAllowance().equals(allowance.get())).findFirst().orElse(null);
-            if (employeeAllowance != null) {
-                employee.get().getEmployeeAllowances().remove(employeeAllowance);
-                employeeRepositories.save(employee.get());
-                return ResponseEntity.ok().build();
-            }
-        }
-        return ResponseEntity.notFound().build();
+    public List<String> getEmployeeCodes() {
+        return employeeRepositories.findAll().stream()
+                .map(Employee::getEmployeeCode)
+                .collect(Collectors.toList());
     }
+
 }
 

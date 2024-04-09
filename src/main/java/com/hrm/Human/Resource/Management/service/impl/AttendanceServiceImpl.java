@@ -71,8 +71,8 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public List<AttendanceDTO> getAttendancesByEmployee(Long id) {
-        Optional<Employee> employee = employeeService.getEmployeeById(id);
+    public List<AttendanceDTO> getAttendancesByEmployee(String employeeCode) {
+        Employee employee = employeeService.getEmployeeByEmployeeCode(employeeCode);
         List<Attendance> attendances = attendanceRepositories.findByEmployee(employee);
         return attendances.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
@@ -96,66 +96,61 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public Map<Long, Integer> calculateWorkdays(int year, int month) {
-        Map<Long, Integer> workdaysMap = new HashMap<>();
+    public List<AttendanceDTO> getAttendancesByMonthAndYear(String employeeCode, int month, int year) {
+        Employee employee = employeeService.getEmployeeByEmployeeCode(employeeCode);
+        List<Attendance> attendances = attendanceRepositories.findByEmployeeAndMonthAndYear(employee, month, year);
+        return attendances.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AttendanceDTO> getAttendancesByYearAndMonth(int year, int month) {
+        List<Attendance> attendances = attendanceRepositories.findByYearAndMonth(year, month);
+        return attendances.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, Integer> calculateWorkdays(int year, int month) {
+        Map<String, Integer> workdaysMap = new HashMap<>();
         List<Attendance> attendances = attendanceRepositories.findByDateBetween(
                 LocalDate.of(year, month, 1),
                 LocalDate.of(year, month, YearMonth.of(year, month).lengthOfMonth())
         );
 
         for (Attendance attendance : attendances) {
-            Long employeeId = attendance.getEmployee().getId();
-            int workdays = attendance.calculateWorkdays(); // Tính số ngày công
-            workdaysMap.put(employeeId, workdaysMap.getOrDefault(employeeId, 0) + workdays);
+            String employeeCode = attendance.getEmployee().getEmployeeCode();
+            Integer workdays = attendance.calculateWorkdays(); // Tính số ngày công
+            if (workdays != null) {
+                workdaysMap.put(employeeCode, workdaysMap.getOrDefault(employeeCode, 0) + workdays);
+            }
         }
 
         return workdaysMap;
     }
 
-//
-//    @Override
-//    public Long calculateWorkDays(Long employeeId) {
-//        List<Attendance> attendances = attendanceRepositories.findByEmployeeId(employeeId);
-//        return (long) attendances.size();
-//    }
-//@Override
-//    public Map<Long, BigDecimal> calculateOvertimeSalaryForEachEmployee() {
-//        List<Employee> employees = employeeRepositories.findAll();
-//        Map<Long, BigDecimal> overtimeSalaries = new HashMap<>();
-//
-//        for (Employee employee : employees) {
-//            BigDecimal monthlySalary = getMonthlySalary(employee);
-//            Long totalOvertimeHours = getTotalOvertimeHours(employee);
-//
-//            BigDecimal overtimeSalary = calculateOvertimeSalary(monthlySalary, totalOvertimeHours);
-//            overtimeSalaries.put(employee.getId(), overtimeSalary);
-//        }
-//
-//        return overtimeSalaries;
-//    }
-//@Override
-//public BigDecimal getMonthlySalary(Employee employee) {
-//    Contract contract = contractRepositories.findByEmployeeCode(employee.getEmployeeCode());
-//    return contract.getMonthlySalary();
-//    }
-//@Override
-//public Long getTotalOvertimeHours(Employee employee) {
-//        List<Attendance> attendances = attendanceRepositories.findByEmployee(employee);
-//        return attendances.stream()
-//                .mapToLong(Attendance::getOverTime)
-//                .sum();
-//    }
-//
-//    @Override
-//    public BigDecimal calculateOvertimeSalary(BigDecimal monthlySalary, Long totalOvertimeHours) {
-//        BigDecimal workDaysPerMonth = BigDecimal.valueOf(26);
-//        BigDecimal workHoursPerDay = BigDecimal.valueOf(8);
-//
-//        BigDecimal hourlyRate = monthlySalary.divide(workDaysPerMonth, 2, RoundingMode.HALF_UP)
-//                .divide(workHoursPerDay, 2, RoundingMode.HALF_UP);
-//
-//        return hourlyRate.multiply(BigDecimal.valueOf(totalOvertimeHours));
-//    }
+    @Override
+    public Map<String, Integer> calculateWorkdaysForEachEmployee(String employeeCode, int year, int month) {
+        Map<String, Integer> workdaysMap = new HashMap<>();
+
+        List<Attendance> attendances = attendanceRepositories.findByEmployee_EmployeeCodeAndDateBetween(
+                employeeCode,
+                LocalDate.of(year, month, 1),
+                LocalDate.of(year, month, YearMonth.of(year, month).lengthOfMonth())
+        );
+
+        int workdays = calculateWorkdays(attendances);
+        workdaysMap.put(employeeCode, workdays);
+
+        return workdaysMap;
+    }
+
+    private int calculateWorkdays(List<Attendance> attendances) {
+        Set<LocalDate> workdaysSet = new HashSet<>();
+        for (Attendance attendance : attendances) {
+            workdaysSet.add(attendance.getDate());
+        }
+        return workdaysSet.size();
+    }
+
 
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {

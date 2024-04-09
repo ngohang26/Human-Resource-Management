@@ -29,9 +29,21 @@ public class AttendanceController {
         return attendanceService.getAllAttendances();
     }
 
-    @GetMapping(path = "/attendance/{id}")
-    public List<AttendanceDTO> getAttendancesByEmployee(@PathVariable Long id) {
-        return attendanceService.getAttendancesByEmployee(id);
+    @GetMapping(path = "/attendance/{employeeCode}")
+    public List<AttendanceDTO> getAttendancesByEmployee(@PathVariable String employeeCode) {
+        return attendanceService.getAttendancesByEmployee(employeeCode);
+    }
+
+    @GetMapping("/employee/{employeeCode}/{month}/{year}")
+    public ResponseEntity<List<AttendanceDTO>> getAttendancesByMonthAndYear(@PathVariable String employeeCode, @PathVariable int month, @PathVariable int year) {
+        List<AttendanceDTO> attendances = attendanceService.getAttendancesByMonthAndYear(employeeCode, month, year);
+        return new ResponseEntity<>(attendances, HttpStatus.OK);
+    }
+
+    @GetMapping("/{year}/{month}")
+    public ResponseEntity<List<AttendanceDTO>> getAttendancesByMonthAndYear(@PathVariable int year, @PathVariable int month) {
+        List<AttendanceDTO> attendances = attendanceService.getAttendancesByYearAndMonth(year, month);
+        return new ResponseEntity<>(attendances, HttpStatus.OK);
     }
 
     @GetMapping("/attendance/date/{date}")
@@ -45,10 +57,11 @@ public class AttendanceController {
     }
 
     @GetMapping("/workdays/{year}/{month}")
-    public ResponseEntity<Map<Long, Integer>> getWorkdays(@PathVariable int year, @PathVariable int month) {
-        Map<Long, Integer> workdays = attendanceService.calculateWorkdays(year, month);
+    public ResponseEntity<Map<String, Integer>> getWorkdays(@PathVariable int year, @PathVariable int month) {
+        Map<String, Integer> workdays = attendanceService.calculateWorkdays(year, month);
         return new ResponseEntity<>(workdays, HttpStatus.OK);
     }
+
 
 
 }

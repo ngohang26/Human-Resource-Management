@@ -1,9 +1,8 @@
 package com.hrm.Human.Resource.Management.service;
 
 import com.hrm.Human.Resource.Management.entity.Allowance;
-import com.hrm.Human.Resource.Management.entity.JobPosition;
+import com.hrm.Human.Resource.Management.entity.EmployeeAllowance;
 import com.hrm.Human.Resource.Management.response.AllowanceResponse;
-import com.hrm.Human.Resource.Management.response.JobPositionResponse;
 import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
@@ -12,16 +11,18 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface AllowanceService {
-    List<Allowance> getAllowance();
 
-    Optional<Allowance> findById(Long id);
+    List<EmployeeAllowance> findByEmployeeCode(String employeeCode);
+
+    List<Allowance> getAllowance();
 
     ResponseEntity<?> addAllowance(Allowance allowance);
 
-    Allowance updateAllowance(Long id, Allowance allowanceDetails);
-
+    Allowance updateAllowance(Long id, Allowance updatedAllowance);
 
     ResponseEntity<AllowanceResponse> hardDeleteAllowance(Long id);
 
-    Map<Long, BigDecimal> calculateTotalAllowanceAmountForEachEmployee();
+    List<Allowance> getAllowancesForEmployee(String employeeCode);
+
+    BigDecimal getTotalAllowance(String employeeCode);
 }

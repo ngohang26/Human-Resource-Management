@@ -34,7 +34,7 @@ public class PersonalInfo {
     private LocalDate birthDate;
 
     @Column( unique = true)
-    @Pattern(regexp="(^$|[0-9]{12})", message="Identity card number must be a 11-digit number")
+    @Pattern(regexp="(^$|[0-9]{12})", message="Identity card number must be a 12-digit number")
     private String identityCardNumber;
 
     @Column

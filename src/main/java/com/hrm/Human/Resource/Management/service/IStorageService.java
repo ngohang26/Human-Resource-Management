@@ -12,5 +12,6 @@ public interface IStorageService {
     public byte[] readFileContent(String fileName);
     public void deleteAllFiles();
     public String getContentType(String fileName) throws IOException;
+    Path getStorageFolder();
 
 }

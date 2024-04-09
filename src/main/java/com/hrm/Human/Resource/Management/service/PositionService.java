@@ -17,5 +17,7 @@ public interface PositionService {
     Position updatePosition(Long id, Position positionDetails);
 
 
-    ResponseEntity<PositionResponse> hardDeletePosition(Long id);
+    ResponseEntity<PositionResponse> deletePosition(Long id);
+
+    Position findPositionByName(String positionName);
 }

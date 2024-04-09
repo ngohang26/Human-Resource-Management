@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/employeeSalary")
@@ -19,46 +20,66 @@ public class EmployeeSalaryController {
     private EmployeeSalaryService employeeSalaryService;
 
     @GetMapping("/overtimeSalaries/{year}/{month}")
-    public ResponseEntity<Map<Long, BigDecimal>> getOvertimeSalaries(@PathVariable int year, @PathVariable int month) {
-        Map<Long, BigDecimal> overtimeSalaries = employeeSalaryService.calculateOvertimeSalaryForEachEmployee(year, month);
+    public ResponseEntity<Map<String, BigDecimal>> getOvertimeSalaries(@PathVariable int year, @PathVariable int month) {
+        Map<String, BigDecimal> overtimeSalaries = employeeSalaryService.calculateOvertimeSalaryForEachEmployee(year, month);
         return ResponseEntity.ok(overtimeSalaries);
     }
 
-    @GetMapping("/insurance")
-    public ResponseEntity<Map<Long, BigDecimal>> getInsuranceForEachEmployee() {
-        Map<Long, BigDecimal> insuranceAmounts = employeeSalaryService.calculateInsuranceForEachEmployee();
-        return ResponseEntity.ok(insuranceAmounts);
-    }
-
     @GetMapping("/income-tax/{year}/{month}")
-    public ResponseEntity<Map<Long, BigDecimal>> getIncomeTaxForEachEmployee(@PathVariable int year, @PathVariable int month) {
-        Map<Long, BigDecimal> incomeTaxes = employeeSalaryService.calculateIncomeTaxForEachEmployee(year, month);
+    public ResponseEntity<Map<String, BigDecimal>> getIncomeTaxForEachEmployee(@PathVariable int year, @PathVariable int month) {
+        Map<String, BigDecimal> incomeTaxes = employeeSalaryService.calculateIncomeTaxForEachEmployee(year, month);
         return ResponseEntity.ok(incomeTaxes);
     }
 
-    @GetMapping("/totalIncome/{employeeId}/{year}/{month}")
-    public ResponseEntity<BigDecimal> getTotalIncome(@PathVariable Long employeeId, @PathVariable int year, @PathVariable int month) {
-        BigDecimal totalIncome = employeeSalaryService.calculateTotalIncome(employeeId, year, month);
+    @GetMapping("/totalIncome/{employeeCode}/{year}/{month}")
+    public ResponseEntity<BigDecimal> getTotalIncome(@PathVariable String employeeCode, @PathVariable int year, @PathVariable int month) {
+        BigDecimal totalIncome = employeeSalaryService.calculateTotalIncome(employeeCode, year, month);
         return new ResponseEntity<>(totalIncome, HttpStatus.OK);
     }
 
-    @GetMapping("/overtimeHours/{employeeId}/{year}/{month}")
-    public ResponseEntity<Long> getOvertimeHours(@PathVariable Long employeeId, @PathVariable int year, @PathVariable int month) {
-        Long totalOvertimeHours = employeeSalaryService.getTotalOvertimeHours(employeeId, year, month);
+    @GetMapping("/overtimeHours/{employeeCode}/{year}/{month}")
+    public ResponseEntity<Long> getOvertimeHours(@PathVariable String employeeCode, @PathVariable int year, @PathVariable int month) {
+        Long totalOvertimeHours = employeeSalaryService.getTotalOvertimeHours(employeeCode, year, month);
         return new ResponseEntity<>(totalOvertimeHours, HttpStatus.OK);
     }
 
-    @GetMapping("/salaryDetails/{employeeId}/{year}/{month}")
-    public ResponseEntity<EmployeeSalary> getSalaryDetails(@PathVariable Long employeeId, @PathVariable int year, @PathVariable int month) {
-        EmployeeSalary details = employeeSalaryService.getEmployeeSalaryDetails(employeeId, year, month);
-        return new ResponseEntity<>(details, HttpStatus.OK);
+    @GetMapping("/salaryDetails/{employeeCode}/{year}/{month}")
+    public ResponseEntity<?> getSalaryDetails(@PathVariable String employeeCode, @PathVariable int year, @PathVariable int month) {
+        if (!isValidEmployeeCode(employeeCode)) {
+            throw new RuntimeException("Mã nhân viên không hợp lệ.");
+        }
+
+        if (!employeeSalaryService.employeeExists(employeeCode)) {
+            throw new RuntimeException("Nhân viên có mã " + employeeCode + " không tồn tại.");
+        }
+
+        if (!employeeSalaryService.employeeDataExists(employeeCode, year, month)) {
+            throw new RuntimeException("Dữ liệu " + month + "/" + year + " của nhân viên " + employeeCode + " không tồn tại.");
+        }
+
+        EmployeeSalary details = employeeSalaryService.getEmployeeSalaryDetails(employeeCode, year, month);
+        return ResponseEntity.ok(details);
     }
+
+
+    private boolean isValidEmployeeCode(String employeeCode) {
+        String pattern = "^[a-zA-Z0-9]+$";
+        return Pattern.matches(pattern, employeeCode);
+    }
+//    @GetMapping("/allSalaryDetails/{year}/{month}")
+//    public ResponseEntity<List<EmployeeSalary>> getAllSalaryDetails(@PathVariable int year, @PathVariable int month) {
+//        List<EmployeeSalary> allDetails = employeeSalaryService.getAllEmployeeSalaryDetails(year, month);
+//        return ResponseEntity.ok(allDetails);
+//    }
 
     @GetMapping("/allSalaryDetails/{year}/{month}")
-    public ResponseEntity<List<EmployeeSalary>> getAllSalaryDetails(@PathVariable int year, @PathVariable int month) {
+    public ResponseEntity<?> getAllSalaryDetails(@PathVariable int year, @PathVariable int month) {
         List<EmployeeSalary> allDetails = employeeSalaryService.getAllEmployeeSalaryDetails(year, month);
-        return new ResponseEntity<>(allDetails, HttpStatus.OK);
+
+        if (allDetails.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.ok(allDetails);
+        }
     }
-
-
 }

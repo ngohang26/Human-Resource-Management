@@ -17,7 +17,7 @@ public class EmployeeAllowance {
     private Long id;
     @ManyToOne
     @JsonIgnore
-    @JoinColumn(name = "employee_id")
+    @JoinColumn(name = "employee_code", referencedColumnName = "employeeCode")
     private Employee employee;
 
     @ManyToOne

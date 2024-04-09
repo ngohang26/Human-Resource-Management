@@ -39,14 +39,14 @@ public class PositionController {
             return positionService.addPosition(position);
         }
     
-        @PutMapping("/#/{id}")
+        @PutMapping("/update/{id}")
         public Position updatePosition(@PathVariable Long id, @RequestBody Position positionDetails) {
             return positionService.updatePosition(id, positionDetails);
         }
 
 
-        @DeleteMapping("/hardDelete/{id}")
-        public ResponseEntity<PositionResponse> hardDeletePosition(@PathVariable Long id) {
-            return positionService.hardDeletePosition(id);
+        @DeleteMapping("/delete/{id}")
+        public ResponseEntity<PositionResponse> deletePosition(@PathVariable Long id) {
+            return positionService.deletePosition(id);
         }
 }

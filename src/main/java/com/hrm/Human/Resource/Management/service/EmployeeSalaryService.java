@@ -1,37 +1,36 @@
 package com.hrm.Human.Resource.Management.service;
 
-import com.hrm.Human.Resource.Management.dto.EmployeeSalaryDTO;
-import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.entity.EmployeeSalary;
-import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
 public interface EmployeeSalaryService {
+    Map<String, BigDecimal> calculateOvertimeSalaryForEachEmployee(int year, int month);
 
-//    Map<Long, BigDecimal> calculateOvertimeSalaryForEachEmployee();
+    Long getTotalOvertimeHours(String employeeCode, int year, int month);
 
-    // Trong EmployeeSalaryServiceImpl
-
-    // Trong EmployeeSalaryServiceImpl
-
-    Map<Long, BigDecimal> calculateOvertimeSalaryForEachEmployee(int year, int month);
-
-    Long getTotalOvertimeHours(Long employeeId, int year, int month);
-
-    Map<Long, BigDecimal> calculateInsuranceForEachEmployee();
+    BigDecimal getTotalInsurance(String employeeCode);
 
     // luong net - sau thue
-    BigDecimal calculateNetSalary(Long employeeId, int year, int month);
+    BigDecimal calculateNetSalary(String employeeCode, int year, int month);
 
-    BigDecimal calculateTotalIncome(Long employeeId, int year, int month);
+    // luong truoc thue moi empl
+    BigDecimal calculateTotalIncome(String employeeCode, int year, int month);
 
-    Map<Long, BigDecimal> calculateIncomeTaxForEachEmployee(int year, int month);
+    BigDecimal calculateIncomeTaxForEmployee(String employeeCode, int year, int month);
 
-    EmployeeSalary getEmployeeSalaryDetails(Long employeeId, int year, int month);
+    // luong truoc thue all
+    Map<String, BigDecimal> calculateIncomeTaxForEachEmployee(int year, int month);
+
+    void calculateAndCacheEmployeeSalariesForMonth(int year, int month);
+
+    EmployeeSalary getEmployeeSalaryDetails(String employeeCode, int year, int month);
 
     List<EmployeeSalary> getAllEmployeeSalaryDetails(int year, int month);
+
+    boolean employeeExists(String employeeCode);
+    boolean employeeDataExists(String employeeCode, int year, int month);
+
 }

@@ -1,6 +1,7 @@
 package com.hrm.Human.Resource.Management.controllers;
 
 import com.hrm.Human.Resource.Management.entity.Allowance;
+import com.hrm.Human.Resource.Management.entity.EmployeeAllowance;
 import com.hrm.Human.Resource.Management.repositories.AllowanceRepositories;
 import com.hrm.Human.Resource.Management.response.AllowanceResponse;
 import com.hrm.Human.Resource.Management.service.AllowanceService;
@@ -28,11 +29,16 @@ public class AllowanceController {
         return allowanceService.getAllowance();
     }
 
-    @GetMapping(path = "/{id}")
-    public ResponseEntity<Allowance> getAllowanceById(@PathVariable Long id) {
-        Optional<Allowance> allowance = allowanceService.findById(id);
-        return allowance.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+    @GetMapping(path = "/{employeeCode}")
+    public ResponseEntity<List<EmployeeAllowance>> getAllowancesByEmployeeCode(@PathVariable String employeeCode) {
+        List<EmployeeAllowance> allowances = allowanceService.findByEmployeeCode(employeeCode);
+        if (allowances.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } else {
+            return ResponseEntity.ok(allowances);
+        }
     }
+
 
     @PostMapping("/addAllowance")
     public ResponseEntity<?> addAllowance(@RequestBody Allowance allowance) {
@@ -51,8 +57,8 @@ public class AllowanceController {
     }
 
     @GetMapping("/calculateTotalAllowanceAmount")
-    public ResponseEntity<Map<Long, BigDecimal>> calculateTotalAllowanceAmount() {
-        Map<Long, BigDecimal> totalAmounts = allowanceService.calculateTotalAllowanceAmountForEachEmployee();
-        return ResponseEntity.ok(totalAmounts);
+    public ResponseEntity<BigDecimal> getTotalAllowance(@PathVariable String employeeCode) {
+        BigDecimal totalAllowance = allowanceService.getTotalAllowance(employeeCode);
+        return ResponseEntity.ok(totalAllowance);
     }
 }

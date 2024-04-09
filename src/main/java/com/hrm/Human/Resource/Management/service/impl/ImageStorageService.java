@@ -104,6 +104,12 @@ public class ImageStorageService implements IStorageService{
 
     }
 
+    @Override
+    public Path getStorageFolder() {
+        return this.storageFolder;
+    }
+
+
 
     @Override
     public String getContentType(String fileName) throws IOException {
