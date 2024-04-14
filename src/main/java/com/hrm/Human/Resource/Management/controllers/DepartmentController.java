@@ -155,7 +155,6 @@ public class DepartmentController {
             } catch (Exception e) {
                 return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
             }
-
     }
 
     @DeleteMapping("/delete/{id}")
@@ -164,13 +163,10 @@ public class DepartmentController {
             if (!departmentRepositories.existsById(id)) {
                 return new ResponseEntity<>("Department not found", HttpStatus.NOT_FOUND);
             }
-
             departmentRepositories.deleteById(id);
             return new ResponseEntity<>("Department deleted successfully", HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
 }

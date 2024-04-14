@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,8 +23,9 @@ public class PositionController {
         
         @Autowired
         private PositionService positionService;
-    
-        @GetMapping(path = "getAllPositions")
+
+     @PreAuthorize("hasAuthority('READ_ALL')")
+    @GetMapping(path = "getAllPositions")
         public List<Position> getAllPositions() {
             return positionService.getPositions();
         }

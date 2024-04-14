@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import javax.management.relation.RoleNotFoundException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -45,7 +46,14 @@ public class EmployeeServiceImpl implements EmployeeService {
     private ContractRepositories contractRepositories;
 
     @Autowired
+    private SkillRepositories skillRepositories;
+
+    @Autowired
+    private ExperienceRepositories experienceRepositories;
+
+    @Autowired
     private PositionService positionService;
+
     @Override
     public Optional<Employee> searchEmployee(String keyword) {
         return employeeRepositories.findByFullNameContaining(keyword);
@@ -57,9 +65,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public Employee getEmployeeByEmployeeCode(String employeeCode) {
-        return employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
-    }
+    public Employee getEmployeeByEmployeeCode(String employeeCode) { return employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);}
 
     @Override
     public Optional<Employee> getEmployeeById(Long id) {
@@ -106,7 +112,20 @@ public Employee saveEmployee(Employee employee) {
             throw new RuntimeException("Position with name " + positionName + " does not exist.");
         }
     }
-    return employeeRepositories.save(employee);
+
+    Employee savedEmployee = employeeRepositories.save(employee);
+
+    for (Skill skill : employee.getSkills()) {
+        skill.setEmployee(savedEmployee);
+        skillRepositories.save(skill);
+    }
+
+    for (Experience experience : employee.getExperiences()) {
+        experience.setEmployee(savedEmployee);
+        experienceRepositories.save(experience);
+    }
+
+    return savedEmployee;
 }
     @Override
     public ResponseEntity<?> updateEmployee(Long id, Employee employeeDetails) {
@@ -158,10 +177,23 @@ public Employee saveEmployee(Employee employee) {
                 throw new RuntimeException("Position with name " + positionName + " does not exist.");
             }
         }
+        skillRepositories.deleteAll(employee.getSkills());
+        experienceRepositories.deleteAll(employee.getExperiences());
+
+        for (Skill skill : employeeDetails.getSkills()) {
+            skill.setEmployee(employee);
+            skillRepositories.save(skill);
+        }
+        for (Experience experience : employeeDetails.getExperiences()) {
+            experience.setEmployee(employee);
+            experienceRepositories.save(experience);
+        }
+
         employee = employeeRepositories.save(employee);
 
         return new ResponseEntity<>(employee, HttpStatus.OK);
     }
+
 
     @Override
     public ResponseEntity<EmployeeResponse> deleteEmployee(Long id) {

@@ -11,9 +11,7 @@ import lombok.Setter;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Getter
 @Setter
@@ -104,9 +102,5 @@ public class Employee {
     }
 
     public void setIsDeleted(boolean b) {}
-
-
-//    public void setDepartment(Department department) {
-//    }
 }
 
