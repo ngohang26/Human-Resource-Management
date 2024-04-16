@@ -1,6 +1,6 @@
 package com.hrm.Human.Resource.Management.service;
 
-import com.hrm.Human.Resource.Management.entity.Authority;
+import com.hrm.Human.Resource.Management.entity.Permission;
 import com.hrm.Human.Resource.Management.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -19,13 +19,13 @@ public class MyUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        List<GrantedAuthority> authorities = new ArrayList<>();
+        List<GrantedAuthority> permissions = new ArrayList<>();
         // Add only authorities, not roles
-        for (Authority authority : user.getAuthorities()) {
-            authorities.add(new SimpleGrantedAuthority(authority.getName()));
+        for (Permission permission : user.getPermissions()) {
+            permissions.add(new SimpleGrantedAuthority(permission.getName()));
         }
-        System.out.println(authorities);
-        return authorities;
+        System.out.println(permissions);
+        return permissions;
     }
 
     @Override

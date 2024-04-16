@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+
 @Service
 public class JobPositionServiceImpl implements JobPositionService {
     @Autowired
@@ -23,7 +24,9 @@ public class JobPositionServiceImpl implements JobPositionService {
     }
 
     @Override
-    public List<JobPosition> getJobPositionName() {return jobPositionRepositories.findAll();}
+    public List<JobPosition> getJobPositionName() {
+        return jobPositionRepositories.findAll();
+    }
 
     @Override
     public ResponseEntity<?> addJobPosition(JobPosition jobPosition) {
@@ -53,7 +56,7 @@ public class JobPositionServiceImpl implements JobPositionService {
     }
 
     @Override
-    public ResponseEntity<JobPositionResponse> hardDeleteJobPosition(Long id){
+    public ResponseEntity<JobPositionResponse> hardDeleteJobPosition(Long id) {
         boolean exists = jobPositionRepositories.existsById(id);
         if (exists) {
             jobPositionRepositories.deleteById(id);

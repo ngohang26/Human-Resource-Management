@@ -28,8 +28,10 @@ public class CandidateService {
 
     @Autowired
     private JobOfferRepositories jobOfferRepositories;
+
     @Autowired
     private final EmailService emailService;
+
     public CandidateService(CandidateRepositories candidateRepositories, EmailService emailService) {
         this.candidateRepositories = candidateRepositories;
         this.emailService = emailService;
@@ -45,12 +47,12 @@ public class CandidateService {
 
         Candidate savedCandidate = candidateRepositories.save(candidate);
 
-        String htmlContent = "<p>Xin chào, \n </p>"+  "\n"
+        String htmlContent = "<p>Xin chào, \n </p>" + "\n"
                 + "<p>Chúng tôi xác nhận rằng chúng tôi đã nhận được đơn ứng tuyển của bạn cho vị trí <b style=\"color:#9a6c8e\">“"
                 + candidate.getJobPosition().getJobPositionName()
                 + "”</b> tại <b>Tolo</b></p>" + "\n"
                 + "<p>Chúng tôi sẽ xem xét hồ sơ và liên hệ với bạn.</p>"
-                 + "<hr style=\"border: none; border-top: 1px solid #ddd;\">"
+                + "<hr style=\"border: none; border-top: 1px solid #ddd;\">"
                 + "<b style=\"color:#9a6c8e\">Người liên hệ của bạn:</b>" + "\n"
                 + "<b>TOLO</b>"
                 + "<p>Email: ngohangvn01@gmail.com </p>"
@@ -138,7 +140,7 @@ public class CandidateService {
             LocalDateTime dateTime = LocalDateTime.parse(payload.get("interviewTime"), formatter);
             candidate.setInterviewTime(dateTime);
             candidate.setCurrentStatus(Candidate.CandidateStatus.FIRST_INTERVIEW);
-            String interviewSchedule = "<p>Xin chào, \n </p>"+  "\n"
+            String interviewSchedule = "<p>Xin chào, \n </p>" + "\n"
                     + "<p>Cảm ơn bạn đã nộp hồ sơ ứng tuyển vào vị trí <b style=\"color:#9a6c8e\">“"
                     + candidate.getJobPosition().getJobPositionName()
                     + "”</b> tại <b>Tolo</b></p>" + "\n"
@@ -170,25 +172,25 @@ public class CandidateService {
             candidate.setJobOffer(jobOffer); // Gán JobOffer cho ứng viên
             candidate.setCurrentStatus(Candidate.CandidateStatus.OFFER_MADE);
             String offerDetails =
-                    "<p>Xin chào, \n </p>"+  "\n"
-                    + "<p>Chúng tôi rất vui mừng thông báo rằng <b>Tolo</b> muốn mời bạn gia nhập đội ngũ của chúng tôi. Chúng tôi đã ấn tượng với kinh nghiệm và kỹ năng của bạn và chúng tôi tin rằng bạn sẽ là một sự bổ sung tuyệt vời cho đội ngũ của chúng tôi."
-                    + "\n"
-                    + "<p>Chúng tôi muốn đề xuất cho với </p>"
-                    + "<p>Lương cơ bản: "+ jobOffer.getMonthlySalary() + " đồng</p> "
-                    + "<p>Ngày bắt đầu:   <b style=\"color:#9a6c8e\">“"
-                    + jobOffer.getStartDate().toString()
-                    + "”</b> tới ngày <b style=\"color:#9a6c8e\">“"
-                    + jobOffer.getEndDate().toString() + "”</b>. Bên cạnh đó, bạn cũng sẽ nhận được các quyền lợi khác như bảo hiểm, phúc lợi, ... </p>"
-                    + "<p>Nếu bạn đồng ý với đề xuất này, chúng tôi muốn mời bạn đến văn phòng của chúng tôi để thảo luận thêm và ký hợp đồng.</p>"
-                    + "<p>Nếu bạn có bất kỳ câu hỏi hoặc cần thêm thông tin, đừng ngần ngại liên hệ với chúng tôi.</p>"
-                    + "<p>Chúng tôi mong muốn được làm việc cùng bạn.</p>"
-                    + "<hr style=\"border: none; border-top: 1px solid #ddd;\">"
-                    + "<b style=\"color:#9a6c8e\">Người liên hệ của bạn:</b>" + "\n"
-                    + "<b>TOLO</b>"
-                    + "<p>Email: ngohangvn01@gmail.com </p>"
-                    + "<hr style=\"border: none; border-top: 1px solid #ddd;\">"
-                    + "<p><b>Trân trọng</b></p>"
-                    + "<b>Tolo</b><p>Việt Nam</p>";
+                    "<p>Xin chào, \n </p>" + "\n"
+                            + "<p>Chúng tôi rất vui mừng thông báo rằng <b>Tolo</b> muốn mời bạn gia nhập đội ngũ của chúng tôi. Chúng tôi đã ấn tượng với kinh nghiệm và kỹ năng của bạn và chúng tôi tin rằng bạn sẽ là một sự bổ sung tuyệt vời cho đội ngũ của chúng tôi."
+                            + "\n"
+                            + "<p>Chúng tôi muốn đề xuất cho với </p>"
+                            + "<p>Lương cơ bản: " + jobOffer.getMonthlySalary() + " đồng</p> "
+                            + "<p>Ngày bắt đầu:   <b style=\"color:#9a6c8e\">“"
+                            + jobOffer.getStartDate().toString()
+                            + "”</b> tới ngày <b style=\"color:#9a6c8e\">“"
+                            + jobOffer.getEndDate().toString() + "”</b>. Bên cạnh đó, bạn cũng sẽ nhận được các quyền lợi khác như bảo hiểm, phúc lợi, ... </p>"
+                            + "<p>Nếu bạn đồng ý với đề xuất này, chúng tôi muốn mời bạn đến văn phòng của chúng tôi để thảo luận thêm và ký hợp đồng.</p>"
+                            + "<p>Nếu bạn có bất kỳ câu hỏi hoặc cần thêm thông tin, đừng ngần ngại liên hệ với chúng tôi.</p>"
+                            + "<p>Chúng tôi mong muốn được làm việc cùng bạn.</p>"
+                            + "<hr style=\"border: none; border-top: 1px solid #ddd;\">"
+                            + "<b style=\"color:#9a6c8e\">Người liên hệ của bạn:</b>" + "\n"
+                            + "<b>TOLO</b>"
+                            + "<p>Email: ngohangvn01@gmail.com </p>"
+                            + "<hr style=\"border: none; border-top: 1px solid #ddd;\">"
+                            + "<p><b>Trân trọng</b></p>"
+                            + "<b>Tolo</b><p>Việt Nam</p>";
             emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
                     + candidate.getJobPosition().getJobPositionName(), offerDetails);
             return candidateRepositories.save(candidate);

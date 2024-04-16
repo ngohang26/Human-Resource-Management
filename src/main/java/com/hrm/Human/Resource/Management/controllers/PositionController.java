@@ -18,37 +18,41 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/positions")
 public class PositionController {
-        @Autowired
-        private PositionRepositories positionRepositories;
-        
-        @Autowired
-        private PositionService positionService;
+    @Autowired
+    private PositionRepositories positionRepositories;
 
-     @PreAuthorize("hasAuthority('READ_ALL')")
-    @GetMapping(path = "getAllPositions")
-        public List<Position> getAllPositions() {
-            return positionService.getPositions();
-        }
-    
-        @GetMapping(path = "/{id}")
-        public ResponseEntity<Position> getPositionById(@PathVariable Long id) {
-            Optional<Position> position = positionService.findById(id);
-            return position.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
-        }
-    
-        @PostMapping("/addPosition")
-        public ResponseEntity<?> addPosition(@RequestBody Position position) {
-            return positionService.addPosition(position);
-        }
-    
-        @PutMapping("/update/{id}")
-        public Position updatePosition(@PathVariable Long id, @RequestBody Position positionDetails) {
-            return positionService.updatePosition(id, positionDetails);
-        }
+    @Autowired
+    private PositionService positionService;
+
+    @PreAuthorize("hasAuthority('VIEW_POSITION')")
+    @GetMapping(path = "/getAllPositions")
+    public List<Position> getAllPositions() {
+        return positionService.getPositions();
+    }
+
+    @PreAuthorize("hasAuthority('VIEW_POSITION')")
+    @GetMapping(path = "/{id}")
+    public ResponseEntity<Position> getPositionById(@PathVariable Long id) {
+        Optional<Position> position = positionService.findById(id);
+        return position.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+    }
+
+    @PreAuthorize("hasAuthority('ADD_POSITION')")
+    @PostMapping("/addPosition")
+    public ResponseEntity<?> addPosition(@RequestBody Position position) {
+        return positionService.addPosition(position);
+    }
+
+    @PreAuthorize("hasAuthority('EDIT_POSITION')")
+    @PutMapping("/update/{id}")
+    public Position updatePosition(@PathVariable Long id, @RequestBody Position positionDetails) {
+        return positionService.updatePosition(id, positionDetails);
+    }
 
 
-        @DeleteMapping("/delete/{id}")
-        public ResponseEntity<PositionResponse> deletePosition(@PathVariable Long id) {
-            return positionService.deletePosition(id);
-        }
+    @PreAuthorize("hasAuthority('DELETE_POSITION')")
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<PositionResponse> deletePosition(@PathVariable Long id) {
+        return positionService.deletePosition(id);
+    }
 }

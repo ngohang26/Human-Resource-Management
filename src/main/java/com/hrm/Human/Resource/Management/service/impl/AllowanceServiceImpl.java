@@ -34,7 +34,9 @@ public class AllowanceServiceImpl implements AllowanceService {
     }
 
     @Override
-    public List<Allowance> getAllowance() {return allowanceRepositories.findAll();}
+    public List<Allowance> getAllowance() {
+        return allowanceRepositories.findAll();
+    }
 
     @Override
     public ResponseEntity<?> addAllowance(Allowance allowance) {
@@ -63,7 +65,7 @@ public class AllowanceServiceImpl implements AllowanceService {
     }
 
     @Override
-    public ResponseEntity<AllowanceResponse> hardDeleteAllowance(Long id){
+    public ResponseEntity<AllowanceResponse> hardDeleteAllowance(Long id) {
         boolean exists = allowanceRepositories.existsById(id);
         if (exists) {
             allowanceRepositories.deleteById(id);
@@ -76,7 +78,7 @@ public class AllowanceServiceImpl implements AllowanceService {
         );
     }
 
-//    @Override
+    //    @Override
 //    public List<Allowance> getEmployeeAllowances(String employeeCode) {
 //        Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
 //        if (employee == null) {
@@ -104,6 +106,7 @@ public class AllowanceServiceImpl implements AllowanceService {
         }
         return allowances;
     }
+
     @Override
     public BigDecimal getTotalAllowance(String employeeCode) {
         Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);

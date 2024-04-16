@@ -1,6 +1,5 @@
 package com.hrm.Human.Resource.Management.service;
 
-import com.hrm.Human.Resource.Management.entity.Authority;
 import com.hrm.Human.Resource.Management.entity.User;
 import com.hrm.Human.Resource.Management.repositories.UserRepositories;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,8 +7,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import java.util.Set;
 
 @Service
 public class MyUserDetailsService implements UserDetailsService {

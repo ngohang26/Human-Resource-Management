@@ -36,14 +36,14 @@ public class AttendanceServiceImpl implements AttendanceService {
         Faker faker = Faker.instance();
 
         LocalTime timeIn = LocalTime.of(
-                faker.number().numberBetween(8, 8),0
+                faker.number().numberBetween(8, 8), 0
         );
 
         double overtimeChance = faker.number().randomDouble(2, 0, 1);
         LocalTime timeOut;
         if (overtimeChance < 0.2) {
             timeOut = LocalTime.of(
-                    faker.number().numberBetween(17, 22),0
+                    faker.number().numberBetween(17, 22), 0
             );
         } else {
             timeOut = LocalTime.of(17, 0);

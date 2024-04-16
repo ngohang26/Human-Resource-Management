@@ -8,6 +8,7 @@ import com.hrm.Human.Resource.Management.service.AllowanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -24,11 +25,13 @@ public class AllowanceController {
     @Autowired
     private AllowanceService allowanceService;
 
+    @PreAuthorize("hasAuthority('VIEW_ALLOWANCE')")
     @GetMapping(path = "getAllAllowances")
     public List<Allowance> getAllAllowances() {
         return allowanceService.getAllowance();
     }
 
+    @PreAuthorize("hasAuthority('VIEW_ALLOWANCE')")
     @GetMapping(path = "/{employeeCode}")
     public ResponseEntity<List<EmployeeAllowance>> getAllowancesByEmployeeCode(@PathVariable String employeeCode) {
         List<EmployeeAllowance> allowances = allowanceService.findByEmployeeCode(employeeCode);
@@ -40,22 +43,26 @@ public class AllowanceController {
     }
 
 
+    @PreAuthorize("hasAuthority('VIEW_ALLOWANCE')")
     @PostMapping("/addAllowance")
     public ResponseEntity<?> addAllowance(@RequestBody Allowance allowance) {
         return allowanceService.addAllowance(allowance);
     }
 
+    @PreAuthorize("hasAuthority('EDIT_ALLOWANCE')")
     @PutMapping("/updateAllowance/{id}")
     public Allowance updateAllowance(@PathVariable Long id, @RequestBody Allowance allowanceDetails) {
         return allowanceService.updateAllowance(id, allowanceDetails);
     }
 
 
+    @PreAuthorize("hasAuthority('DELETE_ALLOWANCE')")
     @DeleteMapping("/hardDelete/{id}")
     public ResponseEntity<AllowanceResponse> hardDeleteAllowance(@PathVariable Long id) {
         return allowanceService.hardDeleteAllowance(id);
     }
 
+    @PreAuthorize("hasAuthority('VIEW_ALLOWANCE')")
     @GetMapping("/calculateTotalAllowanceAmount")
     public ResponseEntity<BigDecimal> getTotalAllowance(@PathVariable String employeeCode) {
         BigDecimal totalAllowance = allowanceService.getTotalAllowance(employeeCode);

@@ -26,12 +26,15 @@ public class PositionServiceImpl implements PositionService {
     }
 
     @Override
-    public List<Position> getPositions() {return positionRepositories.findAll();}
+    public List<Position> getPositions() {
+        return positionRepositories.findAll();
+    }
 
     @Override
     public Position findPositionByName(String positionName) {
         return positionRepositories.findByPositionName(positionName);
     }
+
     @Override
     public ResponseEntity<?> addPosition(Position position) {
         Optional<Position> existingPosition = positionRepositories.findByPositionNameContaining(position.getPositionName());
@@ -64,7 +67,7 @@ public class PositionServiceImpl implements PositionService {
 
 
     @Override
-    public ResponseEntity<PositionResponse> deletePosition(Long id){
+    public ResponseEntity<PositionResponse> deletePosition(Long id) {
         boolean exists = positionRepositories.existsById(id);
         if (exists) {
             positionRepositories.deleteById(id);

@@ -65,7 +65,9 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public Employee getEmployeeByEmployeeCode(String employeeCode) { return employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);}
+    public Employee getEmployeeByEmployeeCode(String employeeCode) {
+        return employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
+    }
 
     @Override
     public Optional<Employee> getEmployeeById(Long id) {
@@ -78,55 +80,58 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public List<Employee> getEmployees() {return employeeRepositories.findAll();}
+    public List<Employee> getEmployees() {
+        return employeeRepositories.findAll();
+    }
 
     @Override
     public List<Employee> getEmployeeEntities() {
         return employeeRepositories.findAll();
     }
 
-@Override
-public Employee saveEmployee(Employee employee) {
-    String identityCardNumber = employee.getPersonalInfo().getIdentityCardNumber();
-    Employee existingEmployee = findEmployeeByIdentityCardNumber(identityCardNumber);
-    if (existingEmployee != null) {
-        throw new RuntimeException("Employee with Identity Card Number " + identityCardNumber + " already exists.");
-    }
-    String departmentName = employee.getDepartmentName();
-    if (departmentName != null) {
-        Department department = departmentRepositories.findByDepartmentName(departmentName);
-        if (department != null) {
-            employee.setDepartment(department);
-        } else {
-            throw new RuntimeException("Department with name " + departmentName + " does not exist.");
+    @Override
+    public Employee saveEmployee(Employee employee) {
+        String identityCardNumber = employee.getPersonalInfo().getIdentityCardNumber();
+        Employee existingEmployee = findEmployeeByIdentityCardNumber(identityCardNumber);
+        if (existingEmployee != null) {
+            throw new RuntimeException("Employee with Identity Card Number " + identityCardNumber + " already exists.");
         }
-    }
-
-
-    String positionName = employee.getPositionName();
-    if (positionName != null) {
-        Position position = positionRepositories.findByPositionName(positionName);
-        if (position != null) {
-            employee.setPosition(position);
-        } else {
-            throw new RuntimeException("Position with name " + positionName + " does not exist.");
+        String departmentName = employee.getDepartmentName();
+        if (departmentName != null) {
+            Department department = departmentRepositories.findByDepartmentName(departmentName);
+            if (department != null) {
+                employee.setDepartment(department);
+            } else {
+                throw new RuntimeException("Department with name " + departmentName + " does not exist.");
+            }
         }
+
+
+        String positionName = employee.getPositionName();
+        if (positionName != null) {
+            Position position = positionRepositories.findByPositionName(positionName);
+            if (position != null) {
+                employee.setPosition(position);
+            } else {
+                throw new RuntimeException("Position with name " + positionName + " does not exist.");
+            }
+        }
+
+        Employee savedEmployee = employeeRepositories.save(employee);
+
+        for (Skill skill : employee.getSkills()) {
+            skill.setEmployee(savedEmployee);
+            skillRepositories.save(skill);
+        }
+
+        for (Experience experience : employee.getExperiences()) {
+            experience.setEmployee(savedEmployee);
+            experienceRepositories.save(experience);
+        }
+
+        return savedEmployee;
     }
 
-    Employee savedEmployee = employeeRepositories.save(employee);
-
-    for (Skill skill : employee.getSkills()) {
-        skill.setEmployee(savedEmployee);
-        skillRepositories.save(skill);
-    }
-
-    for (Experience experience : employee.getExperiences()) {
-        experience.setEmployee(savedEmployee);
-        experienceRepositories.save(experience);
-    }
-
-    return savedEmployee;
-}
     @Override
     public ResponseEntity<?> updateEmployee(Long id, Employee employeeDetails) {
         Optional<Employee> optionalEmployee = employeeRepositories.findById(id);
@@ -212,7 +217,7 @@ public Employee saveEmployee(Employee employee) {
     }
 
     @Override
-    public ResponseEntity<EmployeeResponse> undoDeleteEmployee(Long id){
+    public ResponseEntity<EmployeeResponse> undoDeleteEmployee(Long id) {
         Optional<Employee> employee = employeeRepositories.findById((id));
         if (employee.isPresent()) {
             Employee p = employee.get();
@@ -228,7 +233,7 @@ public Employee saveEmployee(Employee employee) {
     }
 
     @Override
-    public ResponseEntity<EmployeeResponse> hardDeleteEmployee(Long id){
+    public ResponseEntity<EmployeeResponse> hardDeleteEmployee(Long id) {
         boolean exists = employeeRepositories.existsById(id);
         if (exists) {
             employeeRepositories.deleteById(id);
@@ -240,6 +245,7 @@ public Employee saveEmployee(Employee employee) {
                 new EmployeeResponse("failed", "Cannot find employee to delete", "")
         );
     }
+
     @Override
     public Employee findEmployeeByIdentityCardNumber(String identityCardNumber) {
         return employeeRepositories.findEmployeeByPersonalInfoIdentityCardNumber(identityCardNumber);
@@ -275,7 +281,6 @@ public Employee saveEmployee(Employee employee) {
 //    }
 
 
-
     @Override
     public List<EmployeeContractDTO> getAllEmployeeContracts() {
         List<Employee> employees = employeeRepositories.findAll();
@@ -309,7 +314,8 @@ public Employee saveEmployee(Employee employee) {
         Employee employee = employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
         if (employee == null) {
             throw new ResourceNotFoundException("Employee not found");
-        };
+        }
+        ;
         Contract existingContract = employee.getContract();
         if (existingContract != null) {
             throw new IllegalStateException("Contract already exists for this employee");

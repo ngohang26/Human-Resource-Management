@@ -189,7 +189,8 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
 
         return allowanceMap;
     }
-//
+
+    //
 //    public Map<String, BigDecimal> getAllowances(String employeeCode) {
 //        List<EmployeeAllowanceDTO> allowances = allowanceService.getEmployeeAllowances(employeeCode);
 //
@@ -287,50 +288,50 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
 
     private BigDecimal calculateIncomeTax(BigDecimal taxableIncome, boolean isResident, LocalDate startDate, LocalDate endDate) {
         long durationInMonths = ChronoUnit.MONTHS.between(startDate, endDate);
-            BigDecimal taxRate;
-            BigDecimal taxDeduction;
-            BigDecimal incomeTax;
-            if (isResident) {
-                if (durationInMonths >= 3) {
-                    if (taxableIncome.compareTo(BigDecimal.valueOf(5000000)) <= 0) {
-                        taxRate = new BigDecimal("0.05");
-                        taxDeduction = BigDecimal.ZERO;
-                    } else if (taxableIncome.compareTo(BigDecimal.valueOf(10000000)) <= 0) {
-                        taxRate = new BigDecimal("0.1");
-                        taxDeduction = BigDecimal.valueOf(250000);
-                    } else if (taxableIncome.compareTo(BigDecimal.valueOf(18000000)) <= 0) {
-                        taxRate = new BigDecimal("0.15");
-                        taxDeduction = BigDecimal.valueOf(750000);
-                    } else if (taxableIncome.compareTo(BigDecimal.valueOf(32000000)) <= 0) {
-                        taxRate = new BigDecimal("0.2");
-                        taxDeduction = BigDecimal.valueOf(1650000);
-                    } else if (taxableIncome.compareTo(BigDecimal.valueOf(52000000)) <= 0) {
-                        taxRate = new BigDecimal("0.25");
-                        taxDeduction = BigDecimal.valueOf(3250000);
-                    } else if (taxableIncome.compareTo(BigDecimal.valueOf(80000000)) <= 0) {
-                        taxRate = new BigDecimal("0.3");
-                        taxDeduction = BigDecimal.valueOf(5850000);
-                    } else {
-                        taxRate = new BigDecimal("0.35");
-                        taxDeduction = BigDecimal.valueOf(9850000);
-                    }
-                } else {
-                    if (taxableIncome.compareTo(BigDecimal.valueOf(2000000)) > 0) {
-                        taxRate = new BigDecimal("0.1");
-                    } else {
-                        taxRate = BigDecimal.ZERO;
-                    }
+        BigDecimal taxRate;
+        BigDecimal taxDeduction;
+        BigDecimal incomeTax;
+        if (isResident) {
+            if (durationInMonths >= 3) {
+                if (taxableIncome.compareTo(BigDecimal.valueOf(5000000)) <= 0) {
+                    taxRate = new BigDecimal("0.05");
                     taxDeduction = BigDecimal.ZERO;
+                } else if (taxableIncome.compareTo(BigDecimal.valueOf(10000000)) <= 0) {
+                    taxRate = new BigDecimal("0.1");
+                    taxDeduction = BigDecimal.valueOf(250000);
+                } else if (taxableIncome.compareTo(BigDecimal.valueOf(18000000)) <= 0) {
+                    taxRate = new BigDecimal("0.15");
+                    taxDeduction = BigDecimal.valueOf(750000);
+                } else if (taxableIncome.compareTo(BigDecimal.valueOf(32000000)) <= 0) {
+                    taxRate = new BigDecimal("0.2");
+                    taxDeduction = BigDecimal.valueOf(1650000);
+                } else if (taxableIncome.compareTo(BigDecimal.valueOf(52000000)) <= 0) {
+                    taxRate = new BigDecimal("0.25");
+                    taxDeduction = BigDecimal.valueOf(3250000);
+                } else if (taxableIncome.compareTo(BigDecimal.valueOf(80000000)) <= 0) {
+                    taxRate = new BigDecimal("0.3");
+                    taxDeduction = BigDecimal.valueOf(5850000);
+                } else {
+                    taxRate = new BigDecimal("0.35");
+                    taxDeduction = BigDecimal.valueOf(9850000);
                 }
             } else {
-                taxRate = new BigDecimal("0.2");
+                if (taxableIncome.compareTo(BigDecimal.valueOf(2000000)) > 0) {
+                    taxRate = new BigDecimal("0.1");
+                } else {
+                    taxRate = BigDecimal.ZERO;
+                }
                 taxDeduction = BigDecimal.ZERO;
             }
+        } else {
+            taxRate = new BigDecimal("0.2");
+            taxDeduction = BigDecimal.ZERO;
+        }
 
-            incomeTax = taxableIncome.multiply(taxRate).subtract(taxDeduction).setScale(0, RoundingMode.DOWN);
+        incomeTax = taxableIncome.multiply(taxRate).subtract(taxDeduction).setScale(0, RoundingMode.DOWN);
 
         return incomeTax;
-        }
+    }
 
     public BigDecimal calculateTotalDeductionsForEmployee(String employeeCode, int year, int month) {
         BigDecimal totalInsurance = getTotalInsurance(employeeCode);
@@ -369,6 +370,7 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
             }
         }
     }
+
     @Override
     public EmployeeSalary getEmployeeSalaryDetails(String employeeCode, int year, int month) {
         Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
@@ -453,4 +455,4 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         return allDetails;
     }
 
-    }
+}

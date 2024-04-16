@@ -1,9 +1,11 @@
 package com.hrm.Human.Resource.Management.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,21 +20,22 @@ public class User {
 
     @Column(nullable = false, unique = true)
     private String username;
+    @Column(nullable = false)
     private String password;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "role_id")
+    @ManyToOne
+    @JoinColumn(name = "role_id", referencedColumnName = "id")
+    @JsonManagedReference
     private Role role;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany
     @JoinTable(
-            name = "user_authority",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "authority_id"))
-    private Set<Authority> authorities = new HashSet<>();
-
-
-//    @ManyToMany(fetch = FetchType.EAGER)
-//    private Set<Role> roles = new HashSet<>();
+            name = "user_permissions",
+            joinColumns = @JoinColumn(
+                    name = "user_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(
+                    name = "permission_id", referencedColumnName = "id"))
+    @JsonManagedReference
+    private Set<Permission> permissions;
 
 }

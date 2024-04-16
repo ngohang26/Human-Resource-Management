@@ -5,6 +5,7 @@ import com.hrm.Human.Resource.Management.entity.Allowance;
 import com.hrm.Human.Resource.Management.entity.Contract;
 import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.entity.EmployeeAllowance;
+import com.hrm.Human.Resource.Management.jwt.JwtTokenProvider;
 import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
 import com.hrm.Human.Resource.Management.response.EmployeeResponse;
 import com.hrm.Human.Resource.Management.service.EmployeeService;
@@ -28,6 +29,8 @@ public class EmployeeController {
     @Autowired
     private EmployeeService employeeService;
 
+    @Autowired
+    private JwtTokenProvider tokenProvider;
 
     @GetMapping(path = "getAllEmployees")
     public List<Employee> getAllEmployees() {
@@ -40,9 +43,49 @@ public class EmployeeController {
         return employee.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
     }
 
-    @PreAuthorize("hasAuthority('READ_EMPLOYEE')")
+//    @GetMapping(path = "/{id}")
+//    public ResponseEntity<Employee> getEmployeeById(@PathVariable Long id, @RequestHeader("Authorization") String token) {
+//        // Remove the "Bearer " prefix from the token
+//        if (token.startsWith("Bearer ")) {
+//            token = token.substring(7);
+//        }
+//
+//        // Get the username from the token
+//        String username = tokenProvider.getUsernameFromJWT(token);
+//
+//        // Check if the username matches the employeeCode
+//        if (!username.equals(employeeService.findById(id).get().getEmployeeCode()) && !tokenProvider.getAuthoritiesFromJWT(token).contains("ADMIN")) {
+//            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+//        }
+//
+//        Optional<Employee> employee = employeeService.findById(id);
+//        return employee.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+//    }
+
+
+    //    @PreAuthorize("#employeeCode == authentication.principal.username")
+//    @GetMapping("/employee/{employeeCode}")
+//    public ResponseEntity<Employee> getEmployeeByEmployeeCode(@PathVariable String employeeCode) {
+//        Employee employee = employeeService.getEmployeeByEmployeeCode(employeeCode);
+//        if (employee != null) {
+//            return new ResponseEntity<>(employee, HttpStatus.OK);
+//        } else {
+//            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+//        }
+//    }
+
     @GetMapping("/employee/{employeeCode}")
-    public ResponseEntity<Employee> getEmployeeByEmployeeCode(@PathVariable String employeeCode) {
+    public ResponseEntity<Employee> getEmployeeByEmployeeCode(@PathVariable String employeeCode, @RequestHeader("Authorization") String token) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        String username = tokenProvider.getUsernameFromJWT(token);
+
+        if (!username.equals(employeeCode)) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
         Employee employee = employeeService.getEmployeeByEmployeeCode(employeeCode);
         if (employee != null) {
             return new ResponseEntity<>(employee, HttpStatus.OK);
@@ -51,7 +94,6 @@ public class EmployeeController {
         }
     }
 
-    @PreAuthorize("hasAuthority('CREATE_EMPLOYEE')")
     @PostMapping("/addEmployee")
     public ResponseEntity<Employee> addEmployee(@RequestBody Employee employee) {
         Employee savedEmployee = employeeService.saveEmployee(employee);

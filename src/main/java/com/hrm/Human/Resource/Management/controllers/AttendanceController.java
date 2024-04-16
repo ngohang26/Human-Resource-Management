@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -24,28 +25,33 @@ public class AttendanceController {
     @Autowired
     private EmployeeService employeeService;
 
+    @PreAuthorize("hasAuthority('VIEW_ATTENDANCE')")
     @GetMapping(path = "/getAllAttendances")
     public List<AttendanceDTO> getAllAttendances() {
         return attendanceService.getAllAttendances();
     }
 
+    @PreAuthorize("hasAuthority('VIEW_ATTENDANCE')")
     @GetMapping(path = "/attendance/{employeeCode}")
     public List<AttendanceDTO> getAttendancesByEmployee(@PathVariable String employeeCode) {
         return attendanceService.getAttendancesByEmployee(employeeCode);
     }
 
+    @PreAuthorize("hasAuthority('VIEW_ATTENDANCE')")
     @GetMapping("/employee/{employeeCode}/{month}/{year}")
     public ResponseEntity<List<AttendanceDTO>> getAttendancesByMonthAndYear(@PathVariable String employeeCode, @PathVariable int month, @PathVariable int year) {
         List<AttendanceDTO> attendances = attendanceService.getAttendancesByMonthAndYear(employeeCode, month, year);
         return new ResponseEntity<>(attendances, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasAuthority('VIEW_ATTENDANCE')")
     @GetMapping("/{year}/{month}")
     public ResponseEntity<List<AttendanceDTO>> getAttendancesByMonthAndYear(@PathVariable int year, @PathVariable int month) {
         List<AttendanceDTO> attendances = attendanceService.getAttendancesByYearAndMonth(year, month);
         return new ResponseEntity<>(attendances, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasAuthority('VIEW_ATTENDANCE')")
     @GetMapping("/attendance/date/{date}")
     public List<AttendanceDTO> getAttendancesByDate(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return attendanceService.getAttendancesByDate(date);
@@ -56,12 +62,10 @@ public class AttendanceController {
         return attendanceService.createWorkTimes(date);
     }
 
+    @PreAuthorize("hasAuthority('VIEW_ATTENDANCE')")
     @GetMapping("/workdays/{year}/{month}")
     public ResponseEntity<Map<String, Integer>> getWorkdays(@PathVariable int year, @PathVariable int month) {
         Map<String, Integer> workdays = attendanceService.calculateWorkdays(year, month);
         return new ResponseEntity<>(workdays, HttpStatus.OK);
     }
-
-
-
 }
