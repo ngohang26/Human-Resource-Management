@@ -25,4 +25,10 @@ public class EmailService {
             e.printStackTrace();
         }
     }
+
+    public void sendNewPasswordEmail(String to, String newPassword) {
+        String subject = "Your new password";
+        String content = "Your new password is: " + newPassword + "\nPlease change it immediately after login.";
+        sendEmail(to, subject, content);
+    }
 }

@@ -44,7 +44,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeRequests()
                 .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
-                .anyRequest().authenticated().and().csrf().disable().cors().disable()
+                .requestMatchers(HttpMethod.POST, "/users/register").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/users/reset-password/**").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/users/change-password/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/FileUpload/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/FileUpload/**").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/api/FileUpload/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/verify-token").permitAll()
+
+                .anyRequest().authenticated().and().csrf().disable()
                 .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

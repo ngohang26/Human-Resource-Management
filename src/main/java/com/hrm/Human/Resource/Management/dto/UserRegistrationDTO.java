@@ -10,6 +10,7 @@ import java.util.Set;
 public class UserRegistrationDTO {
     private String username;
     private String password;
+    private String email;
     private Long roleId;
     private Set<Long> permissionIds;
 
