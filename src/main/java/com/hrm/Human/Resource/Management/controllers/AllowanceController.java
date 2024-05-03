@@ -3,7 +3,7 @@ package com.hrm.Human.Resource.Management.controllers;
 import com.hrm.Human.Resource.Management.entity.Allowance;
 import com.hrm.Human.Resource.Management.entity.EmployeeAllowance;
 import com.hrm.Human.Resource.Management.repositories.AllowanceRepositories;
-import com.hrm.Human.Resource.Management.response.AllowanceResponse;
+import com.hrm.Human.Resource.Management.response.ErrorResponse;
 import com.hrm.Human.Resource.Management.service.AllowanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,8 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/allowance")
@@ -58,7 +56,7 @@ public class AllowanceController {
 
     @PreAuthorize("hasAuthority('DELETE_ALLOWANCE')")
     @DeleteMapping("/hardDelete/{id}")
-    public ResponseEntity<AllowanceResponse> hardDeleteAllowance(@PathVariable Long id) {
+    public ResponseEntity<ErrorResponse> hardDeleteAllowance(@PathVariable Long id) {
         return allowanceService.hardDeleteAllowance(id);
     }
 

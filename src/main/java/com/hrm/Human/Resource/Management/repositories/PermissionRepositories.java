@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 @EnableJpaRepositories
 public interface PermissionRepositories extends JpaRepository<Permission, Long> {
+    Permission findByName(String viewEmployee);
 }

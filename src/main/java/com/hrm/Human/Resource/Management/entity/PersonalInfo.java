@@ -1,10 +1,12 @@
 package com.hrm.Human.Resource.Management.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
-import javax.validation.constraints.Email;
-import javax.validation.constraints.Pattern;
+
 import java.time.LocalDate;
 
 @Getter
@@ -34,17 +36,17 @@ public class PersonalInfo {
     private LocalDate birthDate;
 
     @Column( unique = true)
-    @Pattern(regexp="(^$|[0-9]{12})", message="Identity card number must be a 12-digit number")
+    @Pattern(regexp="(^$|[0-9]{12})", message="Số CCCD cần phải có 12 chữ số")
+    @NotNull(message = "Số căn cước công dân không thể trống vui lòng điền!")
     private String identityCardNumber;
 
     @Column
-    @Email(message = "Email should be valid")
+    @Email(message = "Email không đúng định dạng username@domain.com")
     private String personalEmail;
 
     @Column
     private String[] certificates;
 
-    // education
     @Column
     private String certificateLevel;
 
@@ -58,6 +60,8 @@ public class PersonalInfo {
         return isResident;
     }
 
+    @Pattern(regexp="(^$|[0-9]{12})", message="Số CCCD cần phải có 12 chữ số")
+    @NotNull(message = "Số căn cước công dân không thể trống vui lòng điền!")
     public String getIdentityCardNumber() {
         return identityCardNumber;
     }

@@ -68,4 +68,11 @@ public class AttendanceController {
         Map<String, Integer> workdays = attendanceService.calculateWorkdays(year, month);
         return new ResponseEntity<>(workdays, HttpStatus.OK);
     }
+
+    @PreAuthorize("hasAuthority('EDIT_ATTENDANCE')")
+    @PutMapping(path = "/update/{id}")
+    public ResponseEntity<AttendanceDTO> updateAttendance(@PathVariable Long id, @RequestBody AttendanceDTO attendanceDTO) {
+        AttendanceDTO updatedAttendance = attendanceService.updateAttendance(id, attendanceDTO);
+        return new ResponseEntity<>(updatedAttendance, HttpStatus.OK);
+    }
 }

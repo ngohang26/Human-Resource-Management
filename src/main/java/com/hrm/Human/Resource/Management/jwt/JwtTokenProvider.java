@@ -31,8 +31,14 @@ public class JwtTokenProvider {
 
         List<String> authorities = myUserDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList());
 
-        return Jwts.builder().setSubject(Long.toString(myUserDetails.getUser().getId())).claim("username", myUserDetails.getUsername()) // Add the username to the claims
-                .claim("authorities", authorities).setIssuedAt(new Date()).setExpiration(expiryDate).signWith(jwtSecret) // Use the new secret key
+        return Jwts.builder().setSubject(Long.toString(
+                myUserDetails.getUser().getId()))
+                .claim("username", myUserDetails.getUsername())
+                .claim("roleName", myUserDetails.getUser().getRole().getName())
+                .claim("userId", myUserDetails.getUser().getId())
+                .claim("email", myUserDetails.getUser().getEmail())
+                .claim("authorities", authorities)
+                .setIssuedAt(new Date()).setExpiration(expiryDate).signWith(jwtSecret)
                 .compact();
     }
 
@@ -42,6 +48,13 @@ public class JwtTokenProvider {
                 .parseClaimsJws(token).getBody();
 
         return Long.parseLong(claims.getSubject());
+    }
+
+    public String getUserRoleNameFromJWT(String token) {
+        Claims claims = Jwts.parser().setSigningKey(jwtSecret)
+                .parseClaimsJws(token).getBody();
+
+        return claims.get("roleName", String.class);
     }
 
     public List<String> getAuthoritiesFromJWT(String token) {

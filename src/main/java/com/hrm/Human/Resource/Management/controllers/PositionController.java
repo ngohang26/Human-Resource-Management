@@ -1,12 +1,10 @@
 package com.hrm.Human.Resource.Management.controllers;
 
 import com.hrm.Human.Resource.Management.entity.Position;
-import com.hrm.Human.Resource.Management.entity.Position;
 import com.hrm.Human.Resource.Management.repositories.PositionRepositories;
-import com.hrm.Human.Resource.Management.response.PositionResponse;
+import com.hrm.Human.Resource.Management.response.ErrorResponse;
 import com.hrm.Human.Resource.Management.service.PositionService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,7 +50,7 @@ public class PositionController {
 
     @PreAuthorize("hasAuthority('DELETE_POSITION')")
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<PositionResponse> deletePosition(@PathVariable Long id) {
+    public ResponseEntity<ErrorResponse> deletePosition(@PathVariable Long id) {
         return positionService.deletePosition(id);
     }
 }

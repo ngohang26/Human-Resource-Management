@@ -1,17 +1,15 @@
 package com.hrm.Human.Resource.Management.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import jakarta.validation.Valid;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -27,10 +25,12 @@ public class Employee {
 
     @Column
     private String codeName;
-    @Column(nullable = false)
 
-    @Size(min = 1, max = 50, message = "Name must be between 1 and 50 characters")
+    @Column(nullable = false)
+    @Size(min = 2, max = 50, message = "Họ tên cần phải lớn hơn 2 ký tự và ít hơn 50 ký tự")
+    @NotNull(message = "Họ tên không thể trống")
     private String fullName;
+
 
     public void setPersonalInfo(PersonalInfo personalInfo) {
         this.personalInfo = personalInfo;
@@ -40,20 +40,21 @@ public class Employee {
     private String image;
 
     @Column(nullable = false, unique = true)
-    @Pattern(regexp="(^0|[0-9]{10})", message="Phone number must be a 10-digit number")
+    @Pattern(regexp="(^0|[0-9]{10})", message="Số điện thoại cần có 10 chữ số và bắt đầu bằng số 0")
+    @NotNull(message = "Số điện thoại không thể trống") // xem xet nen de trong
     private String phoneNumber;
 
     @Column
-    @Email(message = "Email should be valid")
+    @Email(message = "Email không đúng định dạng username@domain.com")
     private String workEmail;
+
+    @Column
+    @Pattern(regexp="(^0|[0-9]{10})", message="Số điện thoại cần có 10 chữ số và bắt đầu bằng số 0")
+    private String phoneContactER;
 
     //emergency_contact
     @Column
     private String nameContactER;
-
-    @Column
-    @Pattern(regexp="(^0|[0-9]{10})", message="Phone number must be a 10-digit number")
-    private String phoneContactER;
 
     @Column
     private String positionName;
@@ -73,6 +74,7 @@ public class Employee {
     @Column
     private Boolean isDeleted;
 
+    @Valid
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
     @JoinColumn(name = "personal_info_id", referencedColumnName = "id")
     private PersonalInfo personalInfo;
@@ -81,12 +83,18 @@ public class Employee {
     @JoinColumn(name = "contract_id", referencedColumnName = "id")
     private Contract contract;
 
-
-    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(name = "employee_skill",
+            joinColumns = @JoinColumn(name = "employee_id"),
+            inverseJoinColumns = @JoinColumn(name = "skill_id"))
     private List<Skill> skills = new ArrayList<>();
 
-    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(name = "employee_experience",
+            joinColumns = @JoinColumn(name = "employee_id"),
+            inverseJoinColumns = @JoinColumn(name = "experience_id"))
     private List<Experience> experiences = new ArrayList<>();
+
 
     public Employee() {
         this.isDeleted = false;

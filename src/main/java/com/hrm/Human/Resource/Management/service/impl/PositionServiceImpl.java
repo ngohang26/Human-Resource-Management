@@ -1,10 +1,8 @@
 package com.hrm.Human.Resource.Management.service.impl;
 
 import com.hrm.Human.Resource.Management.entity.Position;
-import com.hrm.Human.Resource.Management.entity.PersonalInfo;
 import com.hrm.Human.Resource.Management.repositories.PositionRepositories;
-import com.hrm.Human.Resource.Management.repositories.PersonalInfoRepositories;
-import com.hrm.Human.Resource.Management.response.PositionResponse;
+import com.hrm.Human.Resource.Management.response.ErrorResponse;
 import com.hrm.Human.Resource.Management.service.PositionService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,16 +65,16 @@ public class PositionServiceImpl implements PositionService {
 
 
     @Override
-    public ResponseEntity<PositionResponse> deletePosition(Long id) {
+    public ResponseEntity<ErrorResponse> deletePosition(Long id) {
         boolean exists = positionRepositories.existsById(id);
         if (exists) {
             positionRepositories.deleteById(id);
             return ResponseEntity.status(HttpStatus.OK).body(
-                    new PositionResponse("ok", "Delete position successfully", "")
+                    new ErrorResponse("ok", "Delete position successfully", "")
             );
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                new PositionResponse("failed", "Cannot find position to delete", "")
+                new ErrorResponse("failed", "Cannot find position to delete", "")
         );
     }
 }

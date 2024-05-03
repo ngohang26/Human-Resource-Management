@@ -27,6 +27,9 @@ public interface AttendanceService {
 
     Map<String, Integer> calculateWorkdaysForEachEmployee(String employeeCode, int year, int month);
 
+    AttendanceDTO updateAttendance(Long id, AttendanceDTO attendanceDTO);
+
+
 //    Long calculateWorkDays(Long employeeId);
 //
 //    Map<Long, BigDecimal> calculateOvertimeSalaryForEachEmployee();

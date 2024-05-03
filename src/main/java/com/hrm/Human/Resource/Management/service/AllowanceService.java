@@ -2,13 +2,11 @@ package com.hrm.Human.Resource.Management.service;
 
 import com.hrm.Human.Resource.Management.entity.Allowance;
 import com.hrm.Human.Resource.Management.entity.EmployeeAllowance;
-import com.hrm.Human.Resource.Management.response.AllowanceResponse;
+import com.hrm.Human.Resource.Management.response.ErrorResponse;
 import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 public interface AllowanceService {
 
@@ -20,7 +18,7 @@ public interface AllowanceService {
 
     Allowance updateAllowance(Long id, Allowance updatedAllowance);
 
-    ResponseEntity<AllowanceResponse> hardDeleteAllowance(Long id);
+    ResponseEntity<ErrorResponse> hardDeleteAllowance(Long id);
 
     List<Allowance> getAllowancesForEmployee(String employeeCode);
 

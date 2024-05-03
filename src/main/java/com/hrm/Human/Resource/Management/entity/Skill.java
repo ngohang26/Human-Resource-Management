@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -24,12 +25,9 @@ public class Skill {
     @Column
     private String proficiency; // e.g. Beginner, Intermediate, Advanced, Expert
 
-    @ManyToOne
-    @JoinColumn(name = "employee_id")
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-    @JsonIdentityReference(alwaysAsId = true)
-    private Employee employee;
-    @ManyToOne
-    @JoinColumn(name = "candidate_id")
-    private Candidate candidate;
+    @ManyToMany(mappedBy = "skills")
+    private List<Employee> employees = new ArrayList<>();
+
+    @ManyToMany(mappedBy = "skills")
+    private List<Candidate> candidates = new ArrayList<>();
 }

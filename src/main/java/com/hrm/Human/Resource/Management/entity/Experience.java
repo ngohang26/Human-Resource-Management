@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -30,13 +32,9 @@ public class Experience {
     @Column
     private LocalDate endDate;
 
-    @ManyToOne
-    @JoinColumn(name = "employee_id")
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-    @JsonIdentityReference(alwaysAsId = true)
-    private Employee employee;
+    @ManyToMany(mappedBy = "experiences")
+    private List<Employee> employees = new ArrayList<>();
 
-    @ManyToOne
-    @JoinColumn(name = "candidate_id")
-    private Candidate candidate;
+    @ManyToMany(mappedBy = "experiences")
+    private List<Candidate> candidates = new ArrayList<>();
 }

@@ -1,6 +1,7 @@
 package com.hrm.Human.Resource.Management.controllers;
 
 import com.hrm.Human.Resource.Management.entity.EmployeeSalary;
+import com.hrm.Human.Resource.Management.jwt.JwtTokenProvider;
 import com.hrm.Human.Resource.Management.service.AttendanceService;
 import com.hrm.Human.Resource.Management.service.EmployeeSalaryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,9 @@ import java.util.regex.Pattern;
 public class EmployeeSalaryController {
     @Autowired
     private EmployeeSalaryService employeeSalaryService;
+
+    @Autowired
+    private JwtTokenProvider tokenProvider;
 
     @PreAuthorize("hasAuthority('VIEW_SALARY')")
     @GetMapping("/overtimeSalaries/{year}/{month}")
@@ -48,9 +52,19 @@ public class EmployeeSalaryController {
         return new ResponseEntity<>(totalOvertimeHours, HttpStatus.OK);
     }
 
-    @PreAuthorize("hasAuthority('VIEW_SALARY')")
     @GetMapping("/salaryDetails/{employeeCode}/{year}/{month}")
-    public ResponseEntity<?> getSalaryDetails(@PathVariable String employeeCode, @PathVariable int year, @PathVariable int month) {
+    public ResponseEntity<?> getSalaryDetails(@PathVariable String employeeCode, @PathVariable int year, @PathVariable int month, @RequestHeader("Authorization") String token) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        String username = tokenProvider.getUsernameFromJWT(token);
+        List<String> authorities = tokenProvider.getAuthoritiesFromJWT(token); // giả sử bạn có phương thức để lấy danh sách vai trò từ JWT
+
+        if (!authorities.contains("ADD_SALARY") && (!username.equals(employeeCode) || !authorities.contains("VIEW_SALARY"))) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
         if (!isValidEmployeeCode(employeeCode)) {
             throw new RuntimeException("Mã nhân viên không hợp lệ.");
         }
@@ -72,13 +86,8 @@ public class EmployeeSalaryController {
         String pattern = "^[a-zA-Z0-9]+$";
         return Pattern.matches(pattern, employeeCode);
     }
-//    @GetMapping("/allSalaryDetails/{year}/{month}")
-//    public ResponseEntity<List<EmployeeSalary>> getAllSalaryDetails(@PathVariable int year, @PathVariable int month) {
-//        List<EmployeeSalary> allDetails = employeeSalaryService.getAllEmployeeSalaryDetails(year, month);
-//        return ResponseEntity.ok(allDetails);
-//    }
 
-    @PreAuthorize("hasAuthority('VIEW_SALARY')")
+    @PreAuthorize("hasAuthority('ADD_SALARY')")
     @GetMapping("/allSalaryDetails/{year}/{month}")
     public ResponseEntity<?> getAllSalaryDetails(@PathVariable int year, @PathVariable int month) {
         List<EmployeeSalary> allDetails = employeeSalaryService.getAllEmployeeSalaryDetails(year, month);
@@ -89,4 +98,40 @@ public class EmployeeSalaryController {
             return ResponseEntity.ok(allDetails);
         }
     }
+
+    @PreAuthorize("hasAuthority('VIEW_SALARY')")
+    @GetMapping("/totalOvertimeHoursByDepartment/{year}/{month}")
+    public ResponseEntity<Map<String, Long>> getTotalOvertimeHoursByDepartment(@PathVariable int year, @PathVariable int month) {
+        Map<String, Long> totalOvertimeHoursByDepartment = employeeSalaryService.calculateTotalOvertimeHoursByDepartment(year, month);
+        return ResponseEntity.ok(totalOvertimeHoursByDepartment);
+    }
+
+    @PreAuthorize("hasAuthority('VIEW_SALARY')")
+    @GetMapping("/totalIncomeTaxByDepartment/{year}/{month}")
+    public ResponseEntity<Map<String, BigDecimal>> getTotalIncomeTaxByDepartment(@PathVariable int year, @PathVariable int month) {
+        Map<String, BigDecimal> totalIncomeTaxByDepartment = employeeSalaryService.calculateTotalIncomeTaxByDepartment(year, month);
+        return ResponseEntity.ok(totalIncomeTaxByDepartment);
+    }
+
+    @PreAuthorize("hasAuthority('VIEW_SALARY')")
+    @GetMapping("/totalOvertimeHoursPerMonth/{year}/{month}")
+    public ResponseEntity<Map<String, Long>> getTotalOvertimeHoursPerMonth(@PathVariable int year, @PathVariable int month) {
+        Map<String, Long> totalOvertimeHoursPerMonth = employeeSalaryService.calculateTotalOvertimeHoursPerMonth(year, month);
+        return ResponseEntity.ok(totalOvertimeHoursPerMonth);
+    }
+
+    @PreAuthorize("hasAuthority('VIEW_SALARY')")
+    @GetMapping("/totalWorkingHours/{year}/{month}")
+    public ResponseEntity<Map<String, Long>> getTotalWorkingHours(@PathVariable int year, @PathVariable int month) {
+        Map<String, Long> totalWorkingHours = employeeSalaryService.calculateTotalWorkingHoursForEachEmployee(year, month);
+        return ResponseEntity.ok(totalWorkingHours);
+    }
+
+    @PreAuthorize("hasAuthority('VIEW_SALARY')")
+    @GetMapping("/totalSalary/{year}/{month}")
+    public ResponseEntity<BigDecimal> getTotalSalary(@PathVariable int year, @PathVariable int month) {
+        BigDecimal totalSalary = employeeSalaryService.calculateTotalSalaryForAllEmployees(year, month);
+        return ResponseEntity.ok(totalSalary);
+    }
+
 }

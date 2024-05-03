@@ -18,6 +18,8 @@ public interface UserService {
 
     Set<Map<String, String>> getUserPermissions(Long id);
 
+    Set<Map<String, String>> getRolePermission(Long id);
+
     User changePermissions(Long userId, Set<Long> newPermissionIds);
 
     String changePassword(Long userId, String oldPassword, String newPassword);
@@ -26,6 +28,8 @@ public interface UserService {
 
     String createTemporaryPasswordForAdmin(Long userId, String adminEmail);
 
+    User findById(Long id);
+    void changeEmail(Long id, String newEmail);
 }
 
 

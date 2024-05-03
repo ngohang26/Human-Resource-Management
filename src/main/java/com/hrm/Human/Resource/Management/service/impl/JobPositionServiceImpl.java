@@ -2,7 +2,7 @@ package com.hrm.Human.Resource.Management.service.impl;
 
 import com.hrm.Human.Resource.Management.entity.JobPosition;
 import com.hrm.Human.Resource.Management.repositories.JobPositionRepositories;
-import com.hrm.Human.Resource.Management.response.JobPositionResponse;
+import com.hrm.Human.Resource.Management.response.ErrorResponse;
 import com.hrm.Human.Resource.Management.service.JobPositionService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,16 +56,16 @@ public class JobPositionServiceImpl implements JobPositionService {
     }
 
     @Override
-    public ResponseEntity<JobPositionResponse> hardDeleteJobPosition(Long id) {
+    public ResponseEntity<ErrorResponse> hardDeleteJobPosition(Long id) {
         boolean exists = jobPositionRepositories.existsById(id);
         if (exists) {
             jobPositionRepositories.deleteById(id);
             return ResponseEntity.status(HttpStatus.OK).body(
-                    new JobPositionResponse("ok", "Delete jobPosition successfully", "")
+                    new ErrorResponse("ok", "Delete jobPosition successfully", "")
             );
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                new JobPositionResponse("failed", "Cannot find jobPosition to delete", "")
+                new ErrorResponse("failed", "Cannot find jobPosition to delete", "")
         );
     }
 }

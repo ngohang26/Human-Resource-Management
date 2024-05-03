@@ -38,15 +38,18 @@ public class EmployeeAllowanceServiceImpl implements EmployeeAllowanceService {
     @Override
     public EmployeeAllowance addEmployeeAllowance(String employeeCode, EmployeeAllowance employeeAllowance) {
         Employee employee = employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
-
         Allowance allowance = allowanceRepositories.findById(employeeAllowance.getAllowance().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Allowance not found with id: " + employeeAllowance.getAllowance().getId()));
-
         EmployeeAllowance existingAllowance = employeeAllowanceRepositories.findByEmployeeAndAllowance(employee, allowance);
         if (existingAllowance != null) {
-            throw new RuntimeException("Employee has already received this allowance");
+            throw new RuntimeException("Nhân viên đã nhận được trợ cấp này");
         }
-
+        if (employeeAllowance.getStartDate() == null || employeeAllowance.getEndDate() == null) {
+            throw new RuntimeException("Bạn cần nhập ngày bắt đầu và ngày kết thúc ");
+        }
+        if (employeeAllowance.getEndDate().compareTo(employeeAllowance.getStartDate()) < 0) {
+            throw new RuntimeException("Ngày kết thúc cần phải sau ngày bắt đầu");
+        }
         employeeAllowance.setEmployee(employee);
         employeeAllowance.setAllowance(allowance);
         return employeeAllowanceRepositories.save(employeeAllowance);
@@ -59,20 +62,26 @@ public class EmployeeAllowanceServiceImpl implements EmployeeAllowanceService {
             throw new RuntimeException("Employee not found");
         }
         EmployeeAllowance employeeAllowance = employeeAllowanceRepositories.findById(employeeAllowanceId)
-                .orElseThrow(() -> new RuntimeException("EmployeeAllowance not found for this employee"));
-        Allowance allowance = allowanceRepositories.findById(newEmployeeAllowance.getAllowance().getId())
-                .orElseThrow(() -> new RuntimeException("Allowance not found"));
-
-        EmployeeAllowance existingAllowance = employeeAllowanceRepositories.findByEmployeeAndAllowance(employee, allowance);
-        if (existingAllowance != null && !existingAllowance.getId().equals(employeeAllowanceId)) {
-            throw new RuntimeException("Employee has already received this allowance");
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy trợ cấp của nhân viên này"));
+        Allowance allowance = null;
+        if (newEmployeeAllowance.getAllowance() != null) {
+            allowance = allowanceRepositories.findById(newEmployeeAllowance.getAllowance().getId())
+                    .orElseThrow(() -> new RuntimeException("Allowance not found"));
+        } else {
+            allowance = employeeAllowance.getAllowance();
         }
-
+        if (newEmployeeAllowance.getStartDate() == null || newEmployeeAllowance.getEndDate() == null) {
+            throw new RuntimeException("Bạn cần nhập ngày bắt đầu và ngày kết thúc");
+        }
+        if (newEmployeeAllowance.getEndDate().compareTo(newEmployeeAllowance.getStartDate()) < 0) {
+            throw new RuntimeException("Ngày kết thúc cần phải sau ngày bắt đầu");
+        }
         employeeAllowance.setAllowance(allowance);
         employeeAllowance.setStartDate(newEmployeeAllowance.getStartDate());
         employeeAllowance.setEndDate(newEmployeeAllowance.getEndDate());
         return employeeAllowanceRepositories.save(employeeAllowance);
     }
+
 
     @Override
     public void deleteEmployeeAllowance(String employeeCode, Long employeeAllowanceId) {
@@ -84,6 +93,4 @@ public class EmployeeAllowanceServiceImpl implements EmployeeAllowanceService {
                 .orElseThrow(() -> new RuntimeException("EmployeeAllowance not found for this employee"));
         employeeAllowanceRepositories.delete(employeeAllowance);
     }
-
-
 }

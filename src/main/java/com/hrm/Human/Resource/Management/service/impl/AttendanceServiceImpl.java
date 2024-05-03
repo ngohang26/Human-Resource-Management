@@ -6,6 +6,7 @@ import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.entity.Attendance;
 import com.hrm.Human.Resource.Management.repositories.AttendanceRepositories;
 import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
+import com.hrm.Human.Resource.Management.response.ResourceNotFoundException;
 import com.hrm.Human.Resource.Management.service.EmployeeService;
 import com.hrm.Human.Resource.Management.service.AttendanceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
@@ -151,6 +153,26 @@ public class AttendanceServiceImpl implements AttendanceService {
         return workdaysSet.size();
     }
 
+    @Override
+    public AttendanceDTO updateAttendance(Long id, AttendanceDTO attendanceDTO) {
+        Attendance attendance = attendanceRepositories.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance not found with id " + id));
+        LocalTime newTimeIn = attendanceDTO.getTimeIn();
+        LocalTime newTimeOut = attendanceDTO.getTimeOut();
+        if (newTimeOut.isBefore(newTimeIn)) {
+            throw new IllegalArgumentException("Không hợp lệ. Thời gian ra không thể trước thời gian vào");
+        }
+        attendance.setTimeIn(newTimeIn);
+        attendance.setTimeOut(newTimeOut);
+        attendance.setWorkTime(Duration.between(newTimeIn, newTimeOut).toHours() - 1);
+        if (attendance.getWorkTime() > 8) {
+            attendance.setOverTime(attendance.getWorkTime() - 8);
+        } else {
+            attendance.setOverTime(0L);
+        }
+        Attendance updatedAttendance = attendanceRepositories.save(attendance);
+        return convertToDTO(updatedAttendance);
+    }
 
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -161,4 +183,3 @@ public class AttendanceServiceImpl implements AttendanceService {
         }
     }
 }
-

@@ -1,9 +1,9 @@
 package com.hrm.Human.Resource.Management.service.impl;
 
-import com.hrm.Human.Resource.Management.dto.EmployeeAllowanceDTO;
 import com.hrm.Human.Resource.Management.entity.*;
 import com.hrm.Human.Resource.Management.repositories.AttendanceRepositories;
 import com.hrm.Human.Resource.Management.repositories.ContractRepositories;
+import com.hrm.Human.Resource.Management.repositories.DepartmentRepositories;
 import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
 import com.hrm.Human.Resource.Management.service.AllowanceService;
 import com.hrm.Human.Resource.Management.service.AttendanceService;
@@ -33,6 +33,9 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
 
     @Autowired
     private AttendanceRepositories attendanceRepositories;
+
+    @Autowired
+    private DepartmentRepositories departmentRepositories;
 
     @Autowired
     private AllowanceService allowanceService;
@@ -390,7 +393,7 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         }
     }
 
-    public EmployeeSalary calculateEmployeeSalaryForMonth(String employeeCode, int year, int month) {
+    public EmployeeSalary  calculateEmployeeSalaryForMonth(String employeeCode, int year, int month) {
         Employee employee = employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
         BigDecimal monthlySalary = getMonthlySalary(employeeCode);
         BigDecimal totalAllowance = allowanceService.getTotalAllowance(employeeCode);
@@ -454,5 +457,99 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
 
         return allDetails;
     }
+
+    @Override
+    public Map<String, Long> calculateTotalOvertimeHoursByDepartment(int year, int month) {
+        List<Department> departments = departmentRepositories.findAll();
+        Map<String, Long> totalOvertimeHoursByDepartment = new HashMap<>();
+
+        for (Department department : departments) {
+            List<Employee> employeesInDepartment = employeeRepositories.findByDepartmentId(department.getId());
+            long totalOvertimeHours = 0;
+
+            for (Employee employee : employeesInDepartment) {
+                Long overtimeHours = getTotalOvertimeHours(employee.getEmployeeCode(), year, month);
+                if (overtimeHours != null) {
+                    totalOvertimeHours += overtimeHours;
+                }
+            }
+
+            totalOvertimeHoursByDepartment.put(department.getDepartmentName(), totalOvertimeHours);
+        }
+
+        return totalOvertimeHoursByDepartment;
+    }
+
+    @Override
+    public Map<String, BigDecimal> calculateTotalIncomeTaxByDepartment(int year, int month) {
+        List<Department> departments = departmentRepositories.findAll();
+        Map<String, BigDecimal> totalIncomeTaxByDepartment = new HashMap<>();
+
+        for (Department department : departments) {
+            List<Employee> employeesInDepartment = employeeRepositories.findByDepartmentId(department.getId());
+            BigDecimal totalIncomeTax = BigDecimal.ZERO;
+
+            for (Employee employee : employeesInDepartment) {
+                BigDecimal incomeTax = calculateIncomeTaxForEmployee(employee.getEmployeeCode(), year, month);
+                if (incomeTax != null) {
+                    totalIncomeTax = totalIncomeTax.add(incomeTax);
+                }
+            }
+
+            totalIncomeTaxByDepartment.put(department.getDepartmentName(), totalIncomeTax);
+        }
+
+        return totalIncomeTaxByDepartment;
+    }
+
+    @Override
+    public Map<String, Long> calculateTotalOvertimeHoursPerMonth(int year, int month) {
+        List<Employee> employees = employeeRepositories.findAll();
+        Map<String, Long> totalOvertimeHoursPerMonth = new HashMap<>();
+
+        for (Employee employee : employees) {
+            Long totalOvertimeHours = getTotalOvertimeHours(employee.getEmployeeCode(), year, month);
+            totalOvertimeHoursPerMonth.put(employee.getEmployeeCode(), totalOvertimeHours != null ? totalOvertimeHours : 0);
+        }
+
+        return totalOvertimeHoursPerMonth;
+    }
+
+    @Override
+    public Map<String, Long> calculateTotalWorkingHoursForEachEmployee(int year, int month) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = LocalDate.of(year, month, YearMonth.of(year, month).lengthOfMonth());
+
+        List<Employee> employees = employeeRepositories.findAll();
+        Map<String, Long> totalWorkingHoursForEachEmployee = new HashMap<>();
+
+        for (Employee employee : employees) {
+            String employeeCode = employee.getEmployeeCode();
+            List<Attendance> attendances = attendanceRepositories.findByEmployee_EmployeeCodeAndDateBetween(employeeCode, startDate, endDate);
+            long totalWorkingHours = attendances.stream().mapToLong(Attendance::getWorkTime).sum();
+            totalWorkingHoursForEachEmployee.put(employeeCode, totalWorkingHours);
+        }
+
+        return totalWorkingHoursForEachEmployee;
+    }
+
+    @Override
+    public BigDecimal calculateTotalSalaryForAllEmployees(int year, int month) {
+        List<Employee> employees = employeeRepositories.findAll();
+        BigDecimal totalSalaryForAllEmployees = BigDecimal.ZERO;
+
+        for (Employee employee : employees) {
+            BigDecimal totalIncome = calculateTotalIncome(employee.getEmployeeCode(), year, month);
+            BigDecimal incomeTax = calculateIncomeTaxForEmployee(employee.getEmployeeCode(), year, month);
+            BigDecimal netSalary = calculateNetSalary(employee.getEmployeeCode(), year, month);
+
+            if (totalIncome != null && incomeTax != null && netSalary != null) {
+                totalSalaryForAllEmployees = totalSalaryForAllEmployees.add(netSalary);
+            }
+        }
+
+        return totalSalaryForAllEmployees;
+    }
+
 
 }

@@ -1,8 +1,12 @@
 package com.hrm.Human.Resource.Management.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hrm.Human.Resource.Management.dto.CandidateDTO;
+import com.hrm.Human.Resource.Management.dto.CandidateUpdateDTO;
 import com.hrm.Human.Resource.Management.entity.Candidate;
-import com.hrm.Human.Resource.Management.entity.JobOffer;
 import com.hrm.Human.Resource.Management.service.impl.CandidateService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,39 +21,34 @@ public class CandidateController {
         this.candidateService = candidateService;
     }
 
+    @PreAuthorize("hasAuthority('ADD_CANDIDATE')")
     @PostMapping("/addCandidate")
-    public Candidate createCandidate(@RequestBody Candidate candidate) {
+    public CandidateDTO createCandidate(@RequestBody Candidate candidate) {
         return candidateService.createCandidate(candidate);
     }
 
+    @PreAuthorize("hasAuthority('ADD_CANDIDATE')")
     @PostMapping("/{id}/updateStatus")
-    public Candidate updateCandidateStatus(@PathVariable Long id, @RequestBody Candidate.CandidateStatus newStatus) {
-        return candidateService.updateCandidateStatus(id, newStatus);
+    public ResponseEntity<String> updateCandidateStatus(@PathVariable Long id, @RequestBody CandidateUpdateDTO candidateUpdateDTO) {
+        return candidateService.updateCandidateStatus(id, candidateUpdateDTO.getNewStatus(), candidateUpdateDTO.getCandidateDetails(), candidateUpdateDTO.getIdentityCardNumber());
     }
 
-    @PostMapping("/{id}/setInterviewTime")
-    public Candidate setInterviewTime(@PathVariable Long id, @RequestBody Map<String, String> payload) {
-        return candidateService.setInterviewTime(id, payload);
-    }
 
-    @PostMapping("/{id}/makeOffer")
-    public Candidate makeOffer(@PathVariable Long id, @RequestBody JobOffer jobOffer) {
-        return candidateService.makeOffer(id, jobOffer);
-
-    }
-
+    @PreAuthorize("hasAuthority('ADD_CANDIDATE')")
     @GetMapping("/{id}")
-    public Candidate getCandidate(@PathVariable Long id) {
+    public CandidateDTO getCandidate(@PathVariable Long id) {
         return candidateService.getCandidateById(id);
     }
 
+    @PreAuthorize("hasAuthority('ADD_CANDIDATE')")
     @GetMapping(path = "/getAllCandidates")
-    public List<Candidate> getAllCandidate() {
-        return candidateService.getCandidate();
+    public List<CandidateDTO> getAllCandidate() {
+        return candidateService.getCandidates();
     }
 
-    @PutMapping("/{id}")
-    public Candidate updateCandidate(@PathVariable Long id, @RequestBody Candidate candidateDetails) {
+    @PreAuthorize("hasAuthority('ADD_CANDIDATE')")
+    @PutMapping("update/{id}")
+    public CandidateDTO updateCandidate(@PathVariable Long id, @RequestBody Candidate candidateDetails) {
         return candidateService.updateCandidateInfo(id, candidateDetails);
     }
 

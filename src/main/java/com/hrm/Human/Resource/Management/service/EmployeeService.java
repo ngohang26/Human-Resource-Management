@@ -1,13 +1,12 @@
 package com.hrm.Human.Resource.Management.service;
 import com.hrm.Human.Resource.Management.dto.EmployeeContractDTO;
-import com.hrm.Human.Resource.Management.entity.Allowance;
+import com.hrm.Human.Resource.Management.dto.EmployeeDTO;
+import com.hrm.Human.Resource.Management.dto.GenderPercentage;
 import com.hrm.Human.Resource.Management.entity.Contract;
 import com.hrm.Human.Resource.Management.entity.Employee;
-import com.hrm.Human.Resource.Management.entity.EmployeeAllowance;
-import com.hrm.Human.Resource.Management.response.EmployeeResponse;
+import com.hrm.Human.Resource.Management.response.ErrorResponse;
 import org.springframework.http.ResponseEntity;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,15 +25,25 @@ public interface EmployeeService {
 
     List<Employee> getEmployeeEntities();
 
-    Employee saveEmployee(Employee employee);
 
-    ResponseEntity<?> updateEmployee(Long id, Employee employeeDetails);
+    EmployeeDTO getEmployeeByEmployeeCodeDTO(String employeeCode);
 
-    ResponseEntity<EmployeeResponse> deleteEmployee(Long id);
+    Optional<EmployeeDTO> getEmployeeDTOById(Long id);
 
-    ResponseEntity<EmployeeResponse> undoDeleteEmployee(Long id);
+    List<EmployeeDTO> getEmployeesDTO();
 
-    ResponseEntity<EmployeeResponse> hardDeleteEmployee(Long id);
+    List<EmployeeDTO> getEmployeeDTOEntities();
+
+    EmployeeDTO saveEmployee(EmployeeDTO employeeDTO);
+
+
+    EmployeeDTO updateEmployee(Long id, EmployeeDTO employeeDetailsDTO);
+
+    ResponseEntity<ErrorResponse> deleteEmployee(Long id);
+
+    ResponseEntity<ErrorResponse> undoDeleteEmployee(Long id);
+
+    ResponseEntity<ErrorResponse> hardDeleteEmployee(Long id);
 
     Employee findEmployeeByIdentityCardNumber(String identityCardNumber);
 
@@ -48,4 +57,5 @@ public interface EmployeeService {
 
     List<String> getEmployeeCodes();
 
+    GenderPercentage getGenderPercentage();
 }

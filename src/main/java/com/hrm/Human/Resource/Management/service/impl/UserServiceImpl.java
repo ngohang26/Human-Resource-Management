@@ -12,17 +12,17 @@ import com.hrm.Human.Resource.Management.repositories.RoleRepositories;
 import com.hrm.Human.Resource.Management.repositories.UserRepositories;
 import com.hrm.Human.Resource.Management.response.ResourceNotFoundException;
 import com.hrm.Human.Resource.Management.service.UserService;
+import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,6 +66,36 @@ public class UserServiceImpl implements UserService {
         return dto;
     }
 
+    @PostConstruct
+    public void init() {
+        roleRepositories.findAll().forEach(this::setDefaultPermissionsForRole);
+    }
+
+
+    public void setDefaultPermissionsForRole(Role role) {
+        Set<Permission> defaultPermissions = new HashSet<>();
+        switch (role.getName()) {
+            case "SUPER":
+                defaultPermissions.addAll(permissionRepositories.findAll());
+                break;
+            case "ACCOUNTANT":
+                defaultPermissions.add(permissionRepositories.findByName("VIEW_EMPLOYEE"));
+                defaultPermissions.add(permissionRepositories.findByName("VIEW_CONTRACT"));
+                defaultPermissions.add(permissionRepositories.findByName("VIEW_SALARY"));
+                defaultPermissions.add(permissionRepositories.findByName("ADD_SALARY"));
+                defaultPermissions.add(permissionRepositories.findByName("VIEW_ATTENDANCE"));
+
+                break;
+            case "EMPLOYEE":
+                defaultPermissions.add(permissionRepositories.findByName("VIEW_EMPLOYEE"));
+                defaultPermissions.add(permissionRepositories.findByName("VIEW_SALARY"));
+                defaultPermissions.add(permissionRepositories.findByName("VIEW_ATTENDANCE"));
+                break;
+        }
+        role.setPermissions(defaultPermissions);
+        roleRepositories.save(role);
+    }
+
     @Override
     public User createUser(UserRegistrationDTO userRegistration) {
         if (userRepositories.existsByUsername(userRegistration.getUsername())) {
@@ -81,11 +111,18 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("Role not found"));
         user.setRole(role);
 
-        Set<Permission> permissions = userRegistration.getPermissionIds().stream()
+        Set<Permission> rolePermissions = new HashSet<>(role.getPermissions());
+
+        // Add additional permissions
+        Set<Permission> additionalPermissions = userRegistration.getPermissionIds().stream()
                 .map(id -> permissionRepositories.findById(id)
                         .orElseThrow(() -> new RuntimeException("Không tìm thấy quyền này")))
                 .collect(Collectors.toSet());
-        user.setPermissions(permissions);
+
+        // Add additional permissions to rolePermissions
+        rolePermissions.addAll(additionalPermissions);
+
+        user.setPermissions(rolePermissions);
 
         return userRepositories.save(user);
     }
@@ -108,6 +145,21 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toSet());
     }
 
+    @Override
+    public Set<Map<String, String>> getRolePermission(Long id) {
+        Role role = roleRepositories.findById(id)
+                .orElseThrow(() -> new RuntimeException("Role khong tim thya"));
+        Set<Permission> permissions = role.getPermissions();
+        return permissions.stream()
+                .map(permission -> {
+                    Map<String, String> permissionMap = new HashMap<>();
+                    String[] parts = permission.getName().split("_", 2);
+                    permissionMap.put("permission", parts[0]);
+                    permissionMap.put("module", parts[1]);
+                    return permissionMap;
+                })
+                .collect(Collectors.toSet());
+    }
 
     @Override
     public User changePermissions(Long userId, Set<Long> newPermissionIds) {
@@ -123,7 +175,10 @@ public class UserServiceImpl implements UserService {
     public String changePassword(Long userId, String oldPassword, String newPassword) {
         User user = userRepositories.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            throw new RuntimeException("Old password is incorrect");
+            throw new RuntimeException("Mật khẩu cũ không chính xác");
+        }
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new RuntimeException("Mật khẩu mới không được giống mật khẩu cũ");
         }
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepositories.save(user);
@@ -143,11 +198,11 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             throw new ResourceNotFoundException("Người dùng không tồn tại");
         }
-        String newPassword = generateRandomPassword(); // Hàm này tạo ra một mật khẩu ngẫu nhiên
+        String newPassword = generateRandomPassword();
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepositories.save(user);
         emailService.sendNewPasswordEmail(user.getEmail(), newPassword);
-        return "Temporary password has been created and sent to the admin.";
+        return "Mật khẩu tạm thời đã được tạo và gửi tới email của bạn";
     }
 
     @Override
@@ -160,6 +215,24 @@ public class UserServiceImpl implements UserService {
         return "Temporary password has been created and sent to the admin.";
     }
 
+    @Override
+    public User findById(Long id) {
+        return userRepositories.findById(id).orElse(null);
+    }
+
+    @Override
+    public void changeEmail(Long id, String newEmail) {
+        User user = userRepositories.findById(id).orElseThrow(() -> new UsernameNotFoundException("User Not Found with -> userId : " + id));
+        if (EmailValidator.getInstance().isValid(newEmail)) {
+            if (user.getEmail().equals(newEmail)) {
+                throw new IllegalArgumentException("Email mới phải khác email hiện tại");
+            }
+            user.setEmail(newEmail);
+            userRepositories.save(user);
+        } else {
+            throw new IllegalArgumentException("Email không hợp lệ");
+        }
+    }
 
 //    @Override
 //    public User assignRole(Long userId, Long roleId) {

@@ -6,7 +6,7 @@ import com.hrm.Human.Resource.Management.entity.EmployeeAllowance;
 import com.hrm.Human.Resource.Management.repositories.AllowanceRepositories;
 import com.hrm.Human.Resource.Management.repositories.EmployeeAllowanceRepositories;
 import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
-import com.hrm.Human.Resource.Management.response.AllowanceResponse;
+import com.hrm.Human.Resource.Management.response.ErrorResponse;
 import com.hrm.Human.Resource.Management.service.AllowanceService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,37 +65,19 @@ public class AllowanceServiceImpl implements AllowanceService {
     }
 
     @Override
-    public ResponseEntity<AllowanceResponse> hardDeleteAllowance(Long id) {
+    public ResponseEntity<ErrorResponse> hardDeleteAllowance(Long id) {
         boolean exists = allowanceRepositories.existsById(id);
         if (exists) {
             allowanceRepositories.deleteById(id);
             return ResponseEntity.status(HttpStatus.OK).body(
-                    new AllowanceResponse("ok", "Delete allowance successfully", "")
+                    new ErrorResponse("ok", "Delete allowance successfully", "")
             );
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                new AllowanceResponse("failed", "Cannot find allowance to delete", "")
+                new ErrorResponse("failed", "Cannot find allowance to delete", "")
         );
     }
 
-    //    @Override
-//    public List<Allowance> getEmployeeAllowances(String employeeCode) {
-//        Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
-//        if (employee == null) {
-//            throw new RuntimeException("Employee not found");
-//        }
-//        List<EmployeeAllowance> employeeAllowances = employeeAllowanceRepositories.findByEmployee(employee);
-//        return employeeAllowances.stream().map(employeeAllowance -> {
-//            EmployeeAllowanceDTO dto = new EmployeeAllowanceDTO();
-//            dto.setAllowanceId(employeeAllowance.getAllowance().getId());
-//            dto.setEmployeeCode(employee.getEmployeeCode());
-//            dto.setAllowanceName(employeeAllowance.getAllowance().getAllowanceName());
-//            dto.setAllowanceAmount(employeeAllowance.getAllowance().getAllowanceAmount());
-//            dto.setStartDate(employeeAllowance.getStartDate());
-//            dto.setEndDate(employeeAllowance.getEndDate());
-//            return dto;
-//        }).collect(Collectors.toList());
-//    }
     @Override
     public List<Allowance> getAllowancesForEmployee(String employeeCode) {
         Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);

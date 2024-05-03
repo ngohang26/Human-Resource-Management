@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 @Setter
 @Table(name = "allowances")
 
-// tro cap
 public class Allowance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

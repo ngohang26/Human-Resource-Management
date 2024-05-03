@@ -1,7 +1,7 @@
 package com.hrm.Human.Resource.Management.service;
 
 import com.hrm.Human.Resource.Management.entity.Position;
-import com.hrm.Human.Resource.Management.response.PositionResponse;
+import com.hrm.Human.Resource.Management.response.ErrorResponse;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -17,7 +17,7 @@ public interface PositionService {
     Position updatePosition(Long id, Position positionDetails);
 
 
-    ResponseEntity<PositionResponse> deletePosition(Long id);
+    ResponseEntity<ErrorResponse> deletePosition(Long id);
 
     Position findPositionByName(String positionName);
 }

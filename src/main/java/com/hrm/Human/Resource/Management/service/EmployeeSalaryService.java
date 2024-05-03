@@ -33,4 +33,13 @@ public interface EmployeeSalaryService {
     boolean employeeExists(String employeeCode);
     boolean employeeDataExists(String employeeCode, int year, int month);
 
+    Map<String, Long> calculateTotalOvertimeHoursByDepartment(int year, int month);
+
+    Map<String, BigDecimal> calculateTotalIncomeTaxByDepartment(int year, int month);
+
+    Map<String, Long> calculateTotalOvertimeHoursPerMonth(int year, int month);
+
+    Map<String, Long> calculateTotalWorkingHoursForEachEmployee(int year, int month);
+
+    BigDecimal calculateTotalSalaryForAllEmployees(int year, int month);
 }

@@ -1,7 +1,7 @@
 package com.hrm.Human.Resource.Management.service;
 
 import com.hrm.Human.Resource.Management.entity.JobPosition;
-import com.hrm.Human.Resource.Management.response.JobPositionResponse;
+import com.hrm.Human.Resource.Management.response.ErrorResponse;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -17,5 +17,5 @@ public interface JobPositionService {
     JobPosition updateJobPosition(Long id, JobPosition positionDetails);
 
 
-    ResponseEntity<JobPositionResponse> hardDeleteJobPosition(Long id);
+    ResponseEntity<ErrorResponse> hardDeleteJobPosition(Long id);
 }
