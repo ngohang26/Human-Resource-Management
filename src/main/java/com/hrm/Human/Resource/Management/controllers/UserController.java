@@ -64,7 +64,9 @@ public class UserController {
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         User user = userRepositories.findByUsername(loginRequest.getUsername());
         if (user == null) {
-            return new ResponseEntity<>(new ErrorFieldResponse("401 UNAUTHORIZED", "username", "Tài khoản không tồn tại"), HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(
+                    new ErrorFieldResponse("401 UNAUTHORIZED", "username", "Tài khoản không tồn tại"),
+                    HttpStatus.UNAUTHORIZED);
         }
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -78,7 +80,9 @@ public class UserController {
             String jwt = tokenProvider.generateToken(authentication);
             return ResponseEntity.ok(new JwtAuthenticationResponse(jwt));
         } catch (BadCredentialsException e) {
-            return new ResponseEntity<>(new ErrorFieldResponse("401 UNAUTHORIZED", "password", "Sai mật khẩu"), HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(
+                    new ErrorFieldResponse("401 UNAUTHORIZED", "password", "Sai mật khẩu"),
+                    HttpStatus.UNAUTHORIZED);
         }
     }
 

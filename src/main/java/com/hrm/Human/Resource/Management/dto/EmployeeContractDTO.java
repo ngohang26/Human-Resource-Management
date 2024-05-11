@@ -1,7 +1,7 @@
 package com.hrm.Human.Resource.Management.dto;
 
-import com.hrm.Human.Resource.Management.entity.Contract;
-import jakarta.persistence.Column;
+import com.hrm.Human.Resource.Management.entity.Department;
+import com.hrm.Human.Resource.Management.entity.Position;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,8 +18,8 @@ public class EmployeeContractDTO {
     private Long id;
     private String employeeCode;
     private String fullName;
-    private String departmentName;
-    private String positionName;
+    private Position position;
+    private Department department;
     private LocalDate startDate;
     private LocalDate endDate;
     private LocalDate signDate;

@@ -34,7 +34,7 @@ public class ImageStorageService implements IStorageService {
     }
 
     @Override
-    public String storeFile(MultipartFile file) {
+    public String storeFile(MultipartFile file, String subfolder) {
         System.out.println("Storing file: " + file.getOriginalFilename());
 
         try {
@@ -42,7 +42,7 @@ public class ImageStorageService implements IStorageService {
                 throw new RuntimeException("Failed to store empty file.");
             }
             if (!isImageFile(file)) {
-                throw new RuntimeException("You can only upload image file");
+                throw new RuntimeException("Định dạng này không được phép   ");
             }
             float fileSizeInMegabytes = file.getSize() / 1_000_000.0f;
             if (fileSizeInMegabytes > 5.0f) {
@@ -51,13 +51,12 @@ public class ImageStorageService implements IStorageService {
             String fileExtension = FilenameUtils.getExtension(file.getOriginalFilename());
             String generatedFileName = UUID.randomUUID().toString().replace("-", "");
             generatedFileName = generatedFileName + "." + fileExtension;
-            Path destinationFilePath = this.storageFolder.resolve(
-                            Paths.get(generatedFileName))
+            Path destinationFilePath = this.storageFolder.resolve(Paths.get(subfolder, generatedFileName))
                     .normalize().toAbsolutePath();
-            if (!destinationFilePath.getParent().equals(this.storageFolder.toAbsolutePath())) {
-                throw new RuntimeException(
-                        "Cannot store file outside current directory.");
+            if (!destinationFilePath.startsWith(this.storageFolder.toAbsolutePath())) {
+                throw new RuntimeException("Cannot store file outside current directory.");
             }
+
             try (InputStream inputStream = file.getInputStream()) {
                 Files.copy(inputStream, destinationFilePath, StandardCopyOption.REPLACE_EXISTING);
             }
@@ -65,6 +64,46 @@ public class ImageStorageService implements IStorageService {
         } catch (IOException exception) {
             throw new RuntimeException("Failed to store file.", exception);
         }
+    }
+
+    @Override
+    public String storeResumeFile(MultipartFile file, String subfolder) {
+        System.out.println("Storing file: " + file.getOriginalFilename());
+
+        try {
+            if (file.isEmpty()) {
+                throw new RuntimeException("Failed to store empty file.");
+            }
+            if (!isResumeFile(file)) {
+                throw new RuntimeException("Định dạng này không được phép");
+            }
+            float fileSizeInMegabytes = file.getSize() / 1_000_000.0f;
+            if (fileSizeInMegabytes > 5.0f) {
+                throw new RuntimeException("File must be <= 5Mb");
+            }
+            String fileExtension = FilenameUtils.getExtension(file.getOriginalFilename());
+            String generatedFileName = UUID.randomUUID().toString().replace("-", "");
+            generatedFileName = generatedFileName + "." + fileExtension;
+            Path destinationFilePath = this.storageFolder.resolve(Paths.get(subfolder, generatedFileName))
+                    .normalize().toAbsolutePath();
+            if (!destinationFilePath.startsWith(this.storageFolder.toAbsolutePath())) {
+                throw new RuntimeException("Cannot store file outside current directory.");
+            }
+
+            try (InputStream inputStream = file.getInputStream()) {
+                Files.copy(inputStream, destinationFilePath, StandardCopyOption.REPLACE_EXISTING);
+            }
+            return generatedFileName;
+        } catch (IOException exception) {
+            throw new RuntimeException("Failed to store file.", exception);
+        }
+    }
+
+
+    private boolean isResumeFile(MultipartFile file) {
+        String fileExtension = FilenameUtils.getExtension(file.getOriginalFilename());
+        return Arrays.asList(new String[]{"docx", "doc", "odt", "pdf", "rtf", "txt"})
+                .contains(fileExtension.trim().toLowerCase());
     }
 
     @Override
@@ -82,23 +121,6 @@ public class ImageStorageService implements IStorageService {
     }
 
     @Override
-    public byte[] readFileContent(String fileName) {
-        try {
-            Path file = storageFolder.resolve(fileName);
-            Resource resource = new UrlResource(file.toUri());
-            if (resource.exists() || resource.isReadable()) {
-                byte[] bytes = StreamUtils.copyToByteArray(resource.getInputStream());
-                return bytes;
-            } else {
-                throw new RuntimeException(
-                        "Could not read file: " + fileName);
-            }
-        } catch (IOException exception) {
-            throw new RuntimeException("Could not read file: " + fileName, exception);
-        }
-    }
-
-    @Override
     public void deleteAllFiles() {
 
     }
@@ -108,10 +130,36 @@ public class ImageStorageService implements IStorageService {
         return this.storageFolder;
     }
 
-
     @Override
     public String getContentType(String fileName) throws IOException {
-        return Files.probeContentType(Paths.get(this.storageFolder.toString(), fileName));
+        return Files.probeContentType(storageFolder.resolve(fileName));
+    }
+
+    @Override
+    public byte[] readImageFile(String fileName) {
+        return readFileContent(Paths.get("images", fileName));
+    }
+
+    @Override
+    public byte[] readResumeFile(String fileName) {
+        return readFileContent(Paths.get("resumes", fileName));
+    }
+
+    @Override
+    public byte[] readFileContent(Path filePath) {
+        try {
+            Path file = storageFolder.resolve(filePath);
+            Resource resource = new UrlResource(file.toUri());
+            if (resource.exists() || resource.isReadable()) {
+                byte[] bytes = StreamUtils.copyToByteArray(resource.getInputStream());
+                return bytes;
+            } else {
+                throw new RuntimeException(
+                        "Could not read file: " + filePath);
+            }
+        } catch (IOException exception) {
+            throw new RuntimeException("Could not read file: " + filePath, exception);
+        }
     }
 
 

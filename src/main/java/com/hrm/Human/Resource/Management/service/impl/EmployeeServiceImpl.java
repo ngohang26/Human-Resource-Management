@@ -48,10 +48,10 @@ public class EmployeeServiceImpl implements EmployeeService {
     private ContractRepositories contractRepositories;
 
     @Autowired
-    private SkillRepositories skillRepositories;
+    private SkillNameRepositories skillNameRepositories;
 
     @Autowired
-    private ExperienceRepositories experienceRepositories;
+    private ExperienceNameRepositories experienceNameRepositories;
 
     @Autowired
     private PositionService positionService;
@@ -134,26 +134,28 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (existingEmployee != null) {
             throw new RuntimeException("Đã tồn tại nhân viên với số CCCD " + identityCardNumber);
         }
+        Position position = positionRepositories.findById(employee.getPosition().getId())
+            .orElseThrow(() -> new IllegalArgumentException("Position not found with id " + employee.getPosition().getId()));
+    employee.setPosition(position);
 
-        String departmentName = employee.getDepartmentName();
-        if (departmentName != null) {
-            Department department = departmentRepositories.findByDepartmentName(departmentName);
-            if (department == null) {
-                throw new RuntimeException("Vui lòng chọn bộ phận ");
-            }
-            employee.setDepartment(department);
-        }
+    Department department = departmentRepositories.findById(employee.getDepartment().getId())
+            .orElseThrow(() -> new IllegalArgumentException("Department not found with id " + employee.getDepartment().getId()));
+    employee.setDepartment(department);
 
-        String positionName = employee.getPositionName();
-        if (positionName != null) {
-            Position position = positionRepositories.findByPositionName(positionName);
-            if (position == null) {
-                throw new RuntimeException("Vui lòng chọn chức vụ.");
-            }
-            employee.setPosition(position);
-        }
+    for (Skills skill : employee.getSkills()) {
+        SkillName skillName = skillNameRepositories.findById(skill.getSkillName().getId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy SkillName với id: " + skill.getSkillName().getId()));
+        skill.setSkillName(skillName);
+    }
 
-        Employee savedEmployee = employeeRepositories.save(employee);
+    for (Experiences experience : employee.getExperiences()) {
+        ExperienceName experienceName = experienceNameRepositories.findById(experience.getExperienceName().getId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy ExperienceName với id: " + experience.getExperienceName().getId()));
+        experience.setExperienceName(experienceName);
+    }
+
+
+    Employee savedEmployee = employeeRepositories.save(employee);
 
         return convertToDTO(savedEmployee);
     }
@@ -161,6 +163,9 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public EmployeeDTO updateEmployee(Long id, EmployeeDTO employeeDetailsDTO) {
+        if (employeeDetailsDTO.getFullName() == null || employeeDetailsDTO.getFullName().trim().isEmpty()) {
+            throw new RuntimeException("Vui lòng điền đầy đủ thông tin vào form trước khi lưu.");
+        }
         Optional<Employee> optionalEmployee = employeeRepositories.findById(id);
         if (!optionalEmployee.isPresent()) {
             throw new RuntimeException("Employee not found.");
@@ -191,54 +196,38 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setPhoneNumber(employeeDetailsDTO.getPhoneNumber());
         employee.setImage(employeeDetailsDTO.getImage());
         employee.setWorkEmail(employeeDetailsDTO.getWorkEmail());
-        employee.setDepartmentName(employeeDetailsDTO.getDepartmentName());
-        employee.setPositionName(employeeDetailsDTO.getPositionName());
         employee.setPhoneContactER(employeeDetailsDTO.getPhoneContactER());
         employee.setNameContactER(employeeDetailsDTO.getPhoneContactER());
 
-        List<SkillDTO> newSkillsDTO = employeeDetailsDTO.getSkills();
-        if (newSkillsDTO != null) {
-            List<Skill> newSkills = newSkillsDTO.stream().map(this::convertSkillToEntity).collect(Collectors.toList());
-            employee.setSkills(newSkills);
+        List<Skills> newSkills = new ArrayList<>();
+        for (Skills skill : employeeDetailsDTO.getSkills()) {
+            SkillName skillName = skillNameRepositories.findById(skill.getSkillName().getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy SkillName với id: " + skill.getSkillName().getId()));
+            skill.setSkillName(skillName);
+            newSkills.add(skill);
         }
+        employee.setSkills(newSkills);
 
-        List<ExperienceDTO> newExperiencesDTO = employeeDetailsDTO.getExperiences();
-        if (newExperiencesDTO != null) {
-            List<Experience> newExperiences = newExperiencesDTO.stream().map(this::convertExperienceToEntity).collect(Collectors.toList());
-            employee.setExperiences(newExperiences);
+        List<Experiences> newExperiences = new ArrayList<>();
+        for (Experiences experience : employeeDetailsDTO.getExperiences()) {
+            ExperienceName experienceName = experienceNameRepositories.findById(experience.getExperienceName().getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy ExperienceName với id: " + experience.getExperienceName().getId()));
+            experience.setExperienceName(experienceName);
+            newExperiences.add(experience);
         }
+        employee.setExperiences(newExperiences);
+        Position position = positionRepositories.findById(employeeDetailsDTO.getPosition().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Position not found with id " + employeeDetailsDTO.getPosition().getId()));
+        employee.setPosition(position);
 
-        String departmentName = employeeDetailsDTO.getDepartmentName();
-        if (departmentName != null) {
-            Department department = departmentRepositories.findByDepartmentName(departmentName);
-            if (department == null) {
-                throw new RuntimeException("Vui lòng chọn bộ phận.");
-            }
-            employee.setDepartment(department);
-        }
-
-        String positionName = employeeDetailsDTO.getPositionName();
-        if (positionName != null) {
-            Position position = positionRepositories.findByPositionName(positionName);
-            if (position == null) {
-                throw new RuntimeException("Vui lòng chọn chức vụ.");
-            }
-            employee.setPosition(position);
-        }
+        Department department = departmentRepositories.findById(employeeDetailsDTO.getDepartment().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Department not found with id " + employeeDetailsDTO.getDepartment().getId()));
+        employee.setDepartment(department);
 
         employee = employeeRepositories.save(employee);
 
         return convertToDTO(employee);
     }
-
-    public Skill convertSkillToEntity(SkillDTO skillDTO) {
-        return modelMapper.map(skillDTO, Skill.class);
-    }
-
-    public Experience convertExperienceToEntity(ExperienceDTO experienceDTO) {
-        return modelMapper.map(experienceDTO, Experience.class);
-    }
-
 
     public EmployeeDTO convertToDTO(Employee employee) {
         return modelMapper.map(employee, EmployeeDTO.class);
@@ -313,8 +302,8 @@ public class EmployeeServiceImpl implements EmployeeService {
                             employee.getId(),
                             employee.getEmployeeCode(),
                             employee.getFullName(),
-                            employee.getDepartmentName(),
-                            employee.getPositionName(),
+                            employee.getPosition(),
+                            employee.getDepartment(),
                             contract.getStartDate(),
                             contract.getEndDate(),
                             contract.getSignDate(),
@@ -348,8 +337,8 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employee.getId(),
                 employee.getEmployeeCode(),
                 employee.getFullName(),
-                employee.getDepartmentName(),
-                employee.getPositionName(),
+                employee.getPosition(),
+                employee.getDepartment(),
                 employee.getContract().getStartDate(),
                 employee.getContract().getEndDate(),
                 employee.getContract().getSignDate(),
@@ -383,8 +372,8 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employee.getId(),
                 employee.getEmployeeCode(),
                 employee.getFullName(),
-                employee.getDepartmentName(),
-                employee.getPositionName(),
+                employee.getPosition(),
+                employee.getDepartment(),
                 employee.getContract().getStartDate(),
                 employee.getContract().getEndDate(),
                 employee.getContract().getSignDate(),
@@ -409,8 +398,8 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employee.getId(),
                 employee.getEmployeeCode(),
                 employee.getFullName(),
-                employee.getDepartmentName(),
-                employee.getPositionName(),
+                employee.getPosition(),
+                employee.getDepartment(),
                 employee.getContract().getStartDate(),
                 employee.getContract().getEndDate(),
                 employee.getContract().getSignDate(),

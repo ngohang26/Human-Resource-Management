@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/FileUpload/**").permitAll()
                 .requestMatchers(HttpMethod.PUT, "/api/FileUpload/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/verify-token").permitAll()
+                .requestMatchers(HttpMethod.GET, "/summary/**").permitAll()
 
                 .anyRequest().authenticated().and().csrf().disable()
                 .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()

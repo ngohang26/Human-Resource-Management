@@ -7,11 +7,18 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 public interface IStorageService {
-    public String storeFile(MultipartFile file);
+    String storeFile(MultipartFile file, String subfolder);
+
+    String storeResumeFile(MultipartFile file, String subfolder);
+
     public Stream<Path> loadAll();
-    public byte[] readFileContent(String fileName);
     public void deleteAllFiles();
     public String getContentType(String fileName) throws IOException;
     Path getStorageFolder();
 
+    byte[] readImageFile(String fileName);
+
+    byte[] readResumeFile(String fileName);
+
+    byte[] readFileContent(Path filePath);
 }

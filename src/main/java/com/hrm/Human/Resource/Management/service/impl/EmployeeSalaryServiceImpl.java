@@ -418,8 +418,8 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         details.setId(employee.getId());
         details.setEmployeeName(employee.getFullName());
         details.setEmployeeCode(employee.getEmployeeCode());
-        details.setPositionName(employee.getPositionName());
-        details.setDepartmentName(employee.getDepartmentName());
+        details.setPosition(employee.getPosition());
+        details.setDepartment(employee.getDepartment());
         details.setMonthlySalary(monthlySalary);
         details.setTotalAllowance(totalAllowance);
         details.setIncomeTax(incomeTax); // thue

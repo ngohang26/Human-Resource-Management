@@ -1,6 +1,6 @@
 package com.hrm.Human.Resource.Management.dto;
 
-import com.hrm.Human.Resource.Management.entity.PersonalInfo;
+import com.hrm.Human.Resource.Management.entity.*;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.OneToOne;
 import lombok.*;
@@ -16,15 +16,15 @@ public class EmployeeDTO {
     private String fullName;
     private String phoneNumber;
     private String workEmail;
-    private String positionName;
-    private String departmentName;
+    private Position position;
+    private Department department;
     private String image;
     private String phoneContactER;
     private String nameContactER;
     @OneToOne(cascade = CascadeType.ALL)
     private PersonalInfo personalInfo;
-    private List<SkillDTO> skills;  // sử dụng DTO cho danh sách Skills
-    private List<ExperienceDTO> experiences;
+    private List<Skills> skills;
+    private List<Experiences> experiences;
 }
 
 

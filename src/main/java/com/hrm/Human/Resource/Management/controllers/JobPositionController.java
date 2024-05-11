@@ -1,5 +1,6 @@
 package com.hrm.Human.Resource.Management.controllers;
 
+import com.hrm.Human.Resource.Management.dto.JobPositionDTO;
 import com.hrm.Human.Resource.Management.entity.JobPosition;
 import com.hrm.Human.Resource.Management.repositories.JobPositionRepositories;
 import com.hrm.Human.Resource.Management.response.ErrorResponse;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import javax.swing.plaf.PanelUI;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,8 +26,14 @@ public class JobPositionController {
 
     @PreAuthorize("hasAuthority('ADD_CANDIDATE')")
     @GetMapping(path = "getAllJobPositions")
-    public List<JobPosition> getAllJobPositions() {
-        return jobPositionService.getJobPositionName();
+    public ResponseEntity<?> getAllJobPositions() {
+        try {
+            List<JobPositionDTO> jobPositionDTOs = jobPositionService.getAllJobPositions();
+            return new ResponseEntity<>(jobPositionDTOs, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PreAuthorize("hasAuthority('ADD_CANDIDATE')")

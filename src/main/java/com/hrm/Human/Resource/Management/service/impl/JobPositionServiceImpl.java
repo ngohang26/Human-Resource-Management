@@ -1,5 +1,6 @@
 package com.hrm.Human.Resource.Management.service.impl;
 
+import com.hrm.Human.Resource.Management.dto.JobPositionDTO;
 import com.hrm.Human.Resource.Management.entity.JobPosition;
 import com.hrm.Human.Resource.Management.repositories.JobPositionRepositories;
 import com.hrm.Human.Resource.Management.response.ErrorResponse;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class JobPositionServiceImpl implements JobPositionService {
@@ -26,6 +28,22 @@ public class JobPositionServiceImpl implements JobPositionService {
     @Override
     public List<JobPosition> getJobPositionName() {
         return jobPositionRepositories.findAll();
+    }
+
+    @Override
+    public List<JobPositionDTO> getAllJobPositions() {
+        List<JobPosition> jobPositions = jobPositionRepositories.findAll();
+        return jobPositions.stream().map(this::convertToJobPositionDTO).collect(Collectors.toList());
+    }
+
+    private JobPositionDTO convertToJobPositionDTO(JobPosition jobPosition) {
+        JobPositionDTO jobPositionDTO = new JobPositionDTO();
+        jobPositionDTO.setId(jobPosition.getId());
+        jobPositionDTO.setJobPositionName(jobPosition.getJobPositionName());
+        jobPositionDTO.setJobDescription(jobPosition.getJobDescription());
+        jobPositionDTO.setApplicationDeadline(jobPosition.getApplicationDeadline());
+        jobPositionDTO.setCandidateCount(jobPosition.getCandidates().size());
+        return jobPositionDTO;
     }
 
     @Override

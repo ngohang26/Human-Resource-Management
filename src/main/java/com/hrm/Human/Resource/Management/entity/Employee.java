@@ -39,7 +39,7 @@ public class Employee {
     @Column
     private String image;
 
-    @Column(nullable = false, unique = true)
+//    @Column(nullable = false, unique = true)
     @Pattern(regexp="(^0|[0-9]{10})", message="Số điện thoại cần có 10 chữ số và bắt đầu bằng số 0")
     @NotNull(message = "Số điện thoại không thể trống") // xem xet nen de trong
     private String phoneNumber;
@@ -55,12 +55,12 @@ public class Employee {
     //emergency_contact
     @Column
     private String nameContactER;
-
-    @Column
-    private String positionName;
-
-    @Column 
-    private String departmentName;
+//
+//    @Column
+//    private String positionName;
+//
+//    @Column
+//    private String departmentName;
 
     @ManyToOne
     @JsonManagedReference
@@ -87,13 +87,13 @@ public class Employee {
     @JoinTable(name = "employee_skill",
             joinColumns = @JoinColumn(name = "employee_id"),
             inverseJoinColumns = @JoinColumn(name = "skill_id"))
-    private List<Skill> skills = new ArrayList<>();
+    private List<Skills> skills = new ArrayList<>();
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "employee_experience",
             joinColumns = @JoinColumn(name = "employee_id"),
             inverseJoinColumns = @JoinColumn(name = "experience_id"))
-    private List<Experience> experiences = new ArrayList<>();
+    private List<Experiences> experiences = new ArrayList<>();
 
 
     public Employee() {

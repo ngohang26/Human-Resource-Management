@@ -25,8 +25,12 @@ public class CandidateDTO {
     private LocalDate birthDate;
     @Pattern(regexp="(^0|[0-9]{10})", message="Phone number must be a 10-digit number")
     private String phoneNumber;
+    private LocalDate dateApplied;
+    private String resumeFilePath;
     private LocalDateTime interviewTime;
     private LocalDateTime secondInterviewTime;
+    private Candidate.InterviewStatus firstInterviewStatus;
+    private Candidate.InterviewStatus secondInterviewStatus;
     private String[] certificates;
     private String certificateLevel;
     private String fieldOfStudy;
@@ -34,8 +38,8 @@ public class CandidateDTO {
     private JobPosition jobPosition;
     private Candidate.CandidateStatus currentStatus;
     private JobOffer jobOffer;
-    private List<SkillDTO> skills;
-    private List<ExperienceDTO> experiences;
+    private List<Skills> skills;
+    private List<Experiences> experiences;
     private Candidate.CandidateStatus newStatus;
     private String identityCardNumber;
 

@@ -1,9 +1,6 @@
 package com.hrm.Human.Resource.Management.service.impl;
 
-import com.hrm.Human.Resource.Management.dto.CandidateDTO;
-import com.hrm.Human.Resource.Management.dto.CandidateUpdateDTO;
-import com.hrm.Human.Resource.Management.dto.ExperienceDTO;
-import com.hrm.Human.Resource.Management.dto.SkillDTO;
+import com.hrm.Human.Resource.Management.dto.*;
 import com.hrm.Human.Resource.Management.entity.*;
 import com.hrm.Human.Resource.Management.repositories.*;
 import com.hrm.Human.Resource.Management.response.ResourceNotFoundException;
@@ -42,10 +39,10 @@ public class CandidateService {
     private ContractRepositories contractRepositories;
 
     @Autowired
-    private SkillRepositories skillRepositories;
+    private SkillNameRepositories skillNameRepositories;
 
     @Autowired
-    private ExperienceRepositories experienceRepositories;
+    private ExperienceNameRepositories experienceNameRepositories;
 
     @Autowired
     private final EmailService emailService;
@@ -156,6 +153,11 @@ public class CandidateService {
                     }
                     break;
                 case REFUSE:
+                    if (candidate.getCurrentStatus() == Candidate.CandidateStatus.FIRST_INTERVIEW) {
+                        candidate.setFirstInterviewStatus(Candidate.InterviewStatus.FAILED);
+                    } else if (candidate.getCurrentStatus() == Candidate.CandidateStatus.SECOND_INTERVIEW) {
+                        candidate.setSecondInterviewStatus(Candidate.InterviewStatus.FAILED);
+                    }
                     candidate.setCurrentStatus(Candidate.CandidateStatus.REFUSE);
                     emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
                             + candidate.getJobPosition().getJobPositionName(), "Rất tiếc, hồ sơ của bạn không phù hợp với yêu cầu của chúng tôi.");
@@ -174,8 +176,12 @@ public class CandidateService {
         Candidate candidate = getCandidate(id);
         if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.INITIAL_REVIEW) {
             LocalDateTime dateTime = LocalDateTime.parse(payload.get("interviewTime"), FORMATTER);
+            if (dateTime.isBefore(LocalDateTime.now())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ngày phỏng vấn không thể là quá khứ");
+            }
             candidate.setInterviewTime(dateTime);
             candidate.setCurrentStatus(Candidate.CandidateStatus.FIRST_INTERVIEW);
+            candidate.setFirstInterviewStatus(Candidate.InterviewStatus.PENDING);
             String interviewSchedule = "<p>Xin chào, \n </p>" + "\n"
                     + "<p>Cảm ơn bạn đã nộp hồ sơ ứng tuyển vào vị trí <b style=\"color:#9a6c8e\">“"
                     + candidate.getJobPosition().getJobPositionName()
@@ -205,9 +211,14 @@ public class CandidateService {
     public ResponseEntity<String> setSecondInterviewTime(Long id, Map<String, String> payload2) {
         Candidate candidate = getCandidate(id);
         if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.FIRST_INTERVIEW) {
+            candidate.setFirstInterviewStatus(Candidate.InterviewStatus.PASSED);
             LocalDateTime dateTime = LocalDateTime.parse(payload2.get("secondInterviewTime"), FORMATTER);
+            if (dateTime.isBefore(candidate.getInterviewTime())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ngày phỏng vấn lần 2 phải sau ngày phỏng vấn lần 1");
+            }
             candidate.setSecondInterviewTime(dateTime);
             candidate.setCurrentStatus(Candidate.CandidateStatus.SECOND_INTERVIEW);
+            candidate.setSecondInterviewStatus(Candidate.InterviewStatus.PENDING);
             String secondInterviewSchedule = "<p>Xin chào, \n </p>" + "\n"
                     + "<p>Cảm ơn bạn đã tham gia cuộc phỏng vấn đầu tiên cho vị trí <b style=\"color:#9a6c8e\">“"
                     + candidate.getJobPosition().getJobPositionName()
@@ -237,6 +248,7 @@ public class CandidateService {
     public ResponseEntity<String> makeOffer(Long id, JobOffer jobOffer) {
         Candidate candidate = getCandidate(id);
         if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.SECOND_INTERVIEW) {
+            candidate.setSecondInterviewStatus(Candidate.InterviewStatus.PASSED);
             jobOffer = jobOfferRepositories.save(jobOffer);
             candidate.setJobOffer(jobOffer);
             candidate.setCurrentStatus(Candidate.CandidateStatus.OFFER_MADE);
@@ -280,22 +292,20 @@ public class CandidateService {
 
                 employee.setFullName(candidate.getCandidateName());
                 employee.setPhoneNumber(candidate.getPhoneNumber());
-                employee.setPositionName(candidate.getJobPosition().getJobPositionName());
-                List<Experience> experiences = new ArrayList<>();
-                for (Experience experience : candidate.getExperiences()) {
-                    Experience newExperience = new Experience();
-                    newExperience.setJobTitle(experience.getJobTitle());
-                    newExperience.setCompany(experience.getCompany());
-                    newExperience.setStartDate(experience.getStartDate());
-                    newExperience.setEndDate(experience.getEndDate());
+//                employee.getPosition.getPositonName(candidate.getJobPosition().getJobPositionName());
+                List<Experiences> experiences = new ArrayList<>();
+                for (Experiences experience : candidate.getExperiences()) {
+                    Experiences newExperience = new Experiences();
+                    newExperience.setExperienceName(experience.getExperienceName());
+                    newExperience.setRating(experience.getRating());
                     experiences.add(newExperience);
                 }
                 employee.setExperiences(experiences);
-                List<Skill> skills = new ArrayList<>();
-                for (Skill skill : candidate.getSkills()) {
-                    Skill newSkill = new Skill();
-                    newSkill.setName(skill.getName());
-                    newSkill.setProficiency(skill.getProficiency());
+                List<Skills> skills = new ArrayList<>();
+                for (Skills skill : candidate.getSkills()) {
+                    Skills newSkill = new Skills();
+                    newSkill.setSkillName(skill.getSkillName());
+                    newSkill.setRating(skill.getRating());
                     skills.add(newSkill);
                 }
                 employee.setSkills(skills);
@@ -326,11 +336,30 @@ public class CandidateService {
     }
 
     public CandidateDTO createCandidate(Candidate candidate) {
+        if (candidate.getJobPosition() == null || candidate.getJobPosition().getId() == null) {
+            throw new IllegalArgumentException("Vui lòng chọn vị trí công việc.");
+        }
+        if (candidate.getCandidateName() == null || candidate.getCandidateName().trim().isEmpty()) {
+            throw new RuntimeException("Vui lòng điền đầy đủ thông tin vào form trước khi lưu.");
+        }
         JobPosition jobPosition = jobPositionRepositories.findById(candidate.getJobPosition().getId())
                 .orElseThrow(() -> new IllegalArgumentException("JobPosition not found with id " + candidate.getJobPosition().getId()));
         candidate.setJobPosition(jobPosition);
-
+        candidate.setFirstInterviewStatus(Candidate.InterviewStatus.NOT_APPLICABLE);
+        candidate.setSecondInterviewStatus(Candidate.InterviewStatus.NOT_APPLICABLE);
         candidate.setCurrentStatus(Candidate.CandidateStatus.NEW);
+        for (Skills skill : candidate.getSkills()) {
+            SkillName skillName = skillNameRepositories.findById(skill.getSkillName().getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy SkillName với id: " + skill.getSkillName().getId()));
+            skill.setSkillName(skillName);
+        }
+
+        for (Experiences experience : candidate.getExperiences()) {
+            ExperienceName experienceName = experienceNameRepositories.findById(experience.getExperienceName().getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy ExperienceName với id: " + experience.getExperienceName().getId()));
+            experience.setExperienceName(experienceName);
+        }
+
 
         Candidate savedCandidate = candidateRepositories.save(candidate);
 
@@ -356,35 +385,41 @@ public class CandidateService {
         return candidateDTO;
     }
 
-    public CandidateDTO updateCandidateInfo(Long id, Candidate candidateDetails) {
+    public CandidateDTO updateCandidateInfo(Long id, CandidateDTO candidateDetailsDTO) {
+        if (candidateDetailsDTO.getCandidateName() == null || candidateDetailsDTO.getCandidateName().trim().isEmpty()) {
+            throw new RuntimeException("Vui lòng điền đầy đủ thông tin vào form trước khi lưu.");
+        }
         Candidate candidate = getCandidate(id);
         if (candidate != null) {
-            JobPosition jobPositionDetails = jobPositionRepositories.findById(candidateDetails.getJobPosition().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("JobPosition not found with id " + candidateDetails.getJobPosition().getId()));
-            candidate.setJobPosition(jobPositionDetails);
-
-            candidate.setCandidateName(candidateDetails.getCandidateName());
-            candidate.setEmail(candidateDetails.getEmail());
-            candidate.setJobPosition(candidateDetails.getJobPosition());
-            candidate.setPhoneNumber(candidateDetails.getPhoneNumber());
-            candidate.getSkills().clear();
-            candidate.getSkills().addAll(candidateDetails.getSkills());
-            candidate.getExperiences().clear();
-            candidate.getExperiences().addAll(candidateDetails.getExperiences());
-
-            for (Skill skill : candidate.getSkills()) {
-                skill.getCandidates().add(candidate);
-                skillRepositories.save(skill);
+            JobPosition jobPositionDetailsDTO = jobPositionRepositories.findById(candidateDetailsDTO.getJobPosition().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("JobPosition not found with id " + candidateDetailsDTO.getJobPosition().getId()));
+            candidate.setJobPosition(jobPositionDetailsDTO);
+            candidate.setCandidateName(candidateDetailsDTO.getCandidateName());
+            candidate.setEmail(candidateDetailsDTO.getEmail());
+            candidate.setJobPosition(candidateDetailsDTO.getJobPosition());
+            candidate.setPhoneNumber(candidateDetailsDTO.getPhoneNumber());
+            candidate.setDateApplied(candidateDetailsDTO.getDateApplied());
+            candidate.setResumeFilePath(candidateDetailsDTO.getResumeFilePath());
+            List<Skills> newSkills = new ArrayList<>();
+            for (Skills skill : candidateDetailsDTO.getSkills()) {
+                SkillName skillName = skillNameRepositories.findById(skill.getSkillName().getId())
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy SkillName với id: " + skill.getSkillName().getId()));
+                skill.setSkillName(skillName);
+                newSkills.add(skill);
             }
+            candidate.setSkills(newSkills);
 
-            for (Experience experience : candidate.getExperiences()) {
-                experience.getCandidates().add(candidate);
-                experienceRepositories.save(experience);
+            List<Experiences> newExperiences = new ArrayList<>();
+            for (Experiences experience : candidateDetailsDTO.getExperiences()) {
+                ExperienceName experienceName = experienceNameRepositories.findById(experience.getExperienceName().getId())
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy ExperienceName với id: " + experience.getExperienceName().getId()));
+                experience.setExperienceName(experienceName);
+                newExperiences.add(experience);
             }
+            candidate.setExperiences(newExperiences);
 
             candidate = candidateRepositories.save(candidate);
 
-            // Chuyển đổi Candidate đã cập nhật thành CandidateDTO
             CandidateDTO candidateDTO = convertToDTO(candidate);
 
             return candidateDTO;
@@ -394,5 +429,18 @@ public class CandidateService {
 
     public CandidateDTO convertToDTO(Candidate candidate) {
         return modelMapper.map(candidate, CandidateDTO.class);
+    }
+
+    public Map<Candidate.CandidateStatus, Long> getCandidateCountByStatus() {
+        return candidateRepositories.findAll().stream()
+                .collect(Collectors.groupingBy(Candidate::getCurrentStatus, Collectors.counting()));
+    }
+
+    public List<SkillName> getAllSkillNames() {
+        return skillNameRepositories.findAll();
+    }
+
+    public List<ExperienceName> getAllExperienceNames() {
+        return experienceNameRepositories.findAll();
     }
 }

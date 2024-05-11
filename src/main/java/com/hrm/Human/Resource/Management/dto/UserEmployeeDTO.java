@@ -1,5 +1,6 @@
 package com.hrm.Human.Resource.Management.dto;
 
+import com.hrm.Human.Resource.Management.entity.Position;
 import com.hrm.Human.Resource.Management.entity.Role;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,7 +14,7 @@ public class UserEmployeeDTO {
     private String name;
     private String image;
     private String fullName;
-    private String positionName;
+    private Position position;
 
 }
 

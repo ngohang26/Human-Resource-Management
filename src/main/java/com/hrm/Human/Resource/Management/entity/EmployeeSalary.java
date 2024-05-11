@@ -27,7 +27,7 @@ public class EmployeeSalary {
     private BigDecimal overTimeSalary;
     private Long totalOvertimeHours;
     private BigDecimal netSalary;
-    private String positionName;
-    private String departmentName;
+    private Position position;
+    private Department department;
 }
 

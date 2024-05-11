@@ -19,7 +19,7 @@ public class EmailService {
             helper.setFrom("Tolo HR <ngohangvn01@gmail.com>");
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(content, true); // Tham số 'true' cho biết rằng nội dung là HTML.
+            helper.setText(content, true);
             mailSender.send(mimeMessage);
         } catch (Exception e) {
             e.printStackTrace();

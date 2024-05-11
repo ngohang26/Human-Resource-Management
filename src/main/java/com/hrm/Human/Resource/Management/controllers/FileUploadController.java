@@ -3,6 +3,7 @@ package com.hrm.Human.Resource.Management.controllers;
 import com.hrm.Human.Resource.Management.response.UploadResponse;
 import com.hrm.Human.Resource.Management.service.IStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +13,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,26 +25,55 @@ public class FileUploadController {
     @PostMapping("") // search
     public ResponseEntity<UploadResponse> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
-            String generatedFileName = storageService.storeFile(file);
+            String generatedFileName = storageService.storeFile(file, "images");
             return ResponseEntity.status(HttpStatus.OK).body(
-                    new UploadResponse("ok", "upload successfully", generatedFileName)
+                  new UploadResponse("ok", "upload successfully", generatedFileName)
 
             );
         } catch (Exception exception) {
             return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(
-                    new UploadResponse("ok", exception.getMessage(), "")
+                    new UploadResponse("error", exception.getMessage(), "")
             );
         }
     }
 
-    @GetMapping("/files/{fileName:.+}")
-    public ResponseEntity<byte[]> readDetailFile(@PathVariable String fileName) {
+    @PostMapping("/uploadResume")
+    public ResponseEntity<UploadResponse> uploadResume(@RequestParam("file") MultipartFile file) {
+        String generatedFileName = storageService.storeResumeFile(file  , "resumes");
+        return ResponseEntity.status(HttpStatus.OK).body(
+                new UploadResponse("ok", "upload successfully", generatedFileName)
+        );
+    }
+
+    @GetMapping("/files/images/{fileName:.+}")
+    public ResponseEntity<byte[]> readImageFile(@PathVariable String fileName) {
         try {
-            byte[] bytes = storageService.readFileContent(fileName);
-            String contentType = storageService.getContentType(fileName);
+            byte[] bytes = storageService.readImageFile(fileName);
+            String contentType = storageService.getContentType("images/" + fileName);
             return ResponseEntity
                     .ok()
                     .contentType(MediaType.parseMediaType(contentType))
+                    .body(bytes);
+        } catch (Exception exception) {
+            return ResponseEntity.noContent().build();
+        }
+    }
+
+    @GetMapping("/files/resumes/{fileName:.+}")
+    public ResponseEntity<byte[]> readResumeFile(@PathVariable String fileName) {
+        try {
+            byte[] bytes = storageService.readResumeFile(fileName);
+            String contentType = storageService.getContentType("resumes/" + fileName);
+            String contentDisposition = "attachment; filename=\"" + fileName + "\"";
+
+            if (contentType.equals("application/pdf")) {
+                contentDisposition = "inline; filename=\"" + fileName + "\"";
+            }
+
+            return ResponseEntity
+                    .ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
                     .body(bytes);
         } catch (Exception exception) {
             return ResponseEntity.noContent().build();
@@ -77,7 +106,7 @@ public class FileUploadController {
 
             Files.deleteIfExists(storageService.getStorageFolder().resolve(fileName));
             // Lưu hình ảnh mới và lấy tên file được tạo
-            String generatedFileName = storageService.storeFile(file);
+            String generatedFileName = storageService.storeFile(file, "images");
 
             return ResponseEntity.status(HttpStatus.OK).body(
                     new UploadResponse("ok", "update successfully", generatedFileName)

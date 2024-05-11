@@ -57,7 +57,7 @@ public class UserServiceImpl implements UserService {
         if (employee != null) {
             dto.setImage(employee.getImage());
             dto.setFullName(employee.getFullName());
-            dto.setPositionName(employee.getPositionName());
+            dto.setPosition(employee.getPosition());
         }
         dto.setId(user.getId());
         dto.setEmail(user.getEmail());

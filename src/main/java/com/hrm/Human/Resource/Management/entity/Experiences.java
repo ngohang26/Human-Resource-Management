@@ -1,13 +1,10 @@
 package com.hrm.Human.Resource.Management.entity;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIdentityReference;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,26 +12,23 @@ import java.util.List;
 @Setter
 @Entity
 @Table(name = "experiences")
-public class Experience {
+public class Experiences {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
-    private String jobTitle;
+    @ManyToOne
+    @JoinColumn(name = "experience_name_id")
+    private ExperienceName experienceName;
 
     @Column
-    private String company;
+    private Integer rating;
 
-    @Column
-    private LocalDate startDate;
-
-    @Column
-    private LocalDate endDate;
-
+    @JsonIgnore
     @ManyToMany(mappedBy = "experiences")
     private List<Employee> employees = new ArrayList<>();
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "experiences")
     private List<Candidate> candidates = new ArrayList<>();
 }

@@ -43,7 +43,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         double overtimeChance = faker.number().randomDouble(2, 0, 1);
         LocalTime timeOut;
-        if (overtimeChance < 0.2) {
+        if (overtimeChance < 0.25) {
             timeOut = LocalTime.of(
                     faker.number().numberBetween(17, 22), 0
             );

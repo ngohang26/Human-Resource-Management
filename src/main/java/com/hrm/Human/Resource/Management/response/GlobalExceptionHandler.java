@@ -56,12 +56,12 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
-        if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
-            org.hibernate.exception.ConstraintViolationException consEx = (org.hibernate.exception.ConstraintViolationException) ex.getCause();
-            if (consEx.getConstraintName().equals("employees.UK_g6512s2t9cous2oxa17he4irp")) {
-                return new ResponseEntity<>("Số điện thoại đã tồn tại trong hệ thống", HttpStatus.BAD_REQUEST);
-            }
-        }
+//        if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
+//            org.hibernate.exception.ConstraintViolationException consEx = (org.hibernate.exception.ConstraintViolationException) ex.getCause();
+//            if (consEx.getConstraintName().equals("employees.UK_g6512s2t9cous2oxa17he4irp")) {
+//                return new ResponseEntity<>("Số điện thoại đã tồn tại trong hệ thống", HttpStatus.BAD_REQUEST);
+//            }
+//        }
         // Lấy root cause để có thông tin chi tiết hơn về lỗi
         Throwable rootCause = ExceptionUtils.getRootCause(ex);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(rootCause.getMessage());
