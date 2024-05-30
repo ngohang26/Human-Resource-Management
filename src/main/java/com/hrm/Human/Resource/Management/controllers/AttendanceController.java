@@ -75,4 +75,11 @@ public class AttendanceController {
         AttendanceDTO updatedAttendance = attendanceService.updateAttendance(id, attendanceDTO);
         return new ResponseEntity<>(updatedAttendance, HttpStatus.OK);
     }
+
+    @PreAuthorize("hasAuthority('EDIT_ATTENDANCE')")
+        @GetMapping("/total-work-hours/{year}/{month}")
+    public ResponseEntity<Map<LocalDate, Map<String, Long>>> getTotalWorkAndOvertimeHours(@PathVariable int year, @PathVariable int month) {
+        Map<LocalDate, Map<String, Long>> result = attendanceService.getTotalWorkAndOvertimeHours(year, month);
+        return ResponseEntity.ok(result);
+    }
 }

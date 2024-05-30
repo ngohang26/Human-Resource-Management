@@ -29,6 +29,8 @@ public interface AttendanceService {
 
     AttendanceDTO updateAttendance(Long id, AttendanceDTO attendanceDTO);
 
+    Map<LocalDate, Map<String, Long>> getTotalWorkAndOvertimeHours(int year, int month);
+
 
 //    Long calculateWorkDays(Long employeeId);
 //

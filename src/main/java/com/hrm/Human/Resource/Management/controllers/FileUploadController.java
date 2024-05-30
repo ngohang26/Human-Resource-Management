@@ -24,17 +24,11 @@ public class FileUploadController {
 
     @PostMapping("") // search
     public ResponseEntity<UploadResponse> uploadFile(@RequestParam("file") MultipartFile file) {
-        try {
             String generatedFileName = storageService.storeFile(file, "images");
             return ResponseEntity.status(HttpStatus.OK).body(
                   new UploadResponse("ok", "upload successfully", generatedFileName)
 
             );
-        } catch (Exception exception) {
-            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(
-                    new UploadResponse("error", exception.getMessage(), "")
-            );
-        }
     }
 
     @PostMapping("/uploadResume")

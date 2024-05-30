@@ -2,22 +2,22 @@ package com.hrm.Human.Resource.Management.service.impl;
 
 import com.github.javafaker.Faker;
 import com.hrm.Human.Resource.Management.dto.AttendanceDTO;
+import com.hrm.Human.Resource.Management.entity.Contract;
 import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.entity.Attendance;
 import com.hrm.Human.Resource.Management.repositories.AttendanceRepositories;
+import com.hrm.Human.Resource.Management.repositories.ContractRepositories;
 import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
 import com.hrm.Human.Resource.Management.response.ResourceNotFoundException;
 import com.hrm.Human.Resource.Management.service.EmployeeService;
 import com.hrm.Human.Resource.Management.service.AttendanceService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.YearMonth;
+import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,7 +32,11 @@ public class AttendanceServiceImpl implements AttendanceService {
     private AttendanceRepositories attendanceRepositories;
 
     @Autowired
+    private ContractRepositories contractRepositories;
+
+    @Autowired
     private EmployeeRepositories employeeRepositories;
+    private static final Logger logger = (Logger) LoggerFactory.getLogger(AttendanceServiceImpl.class);
 
     public Attendance createWorkTime(Employee employee, LocalDate date) {
         Faker faker = Faker.instance();
@@ -56,15 +60,27 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Override
     public List<Attendance> createWorkTimes(LocalDate date) {
-        List<Employee> employees = employeeService.getEmployeeEntities();
+        // Kiểm tra xem ngày hiện tại có phải là Chủ nhật hay không
+        if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            // Nếu là Chủ nhật, không tạo dữ liệu chấm công
+            return new ArrayList<>();
+        }
+
+        List<Employee> employees = employeeService.getActiveEmployees();
         List<Attendance> attendances = new ArrayList<>();
-        for (Employee employee : employees) {
+
+        // Tính số lượng nhân viên chấm công dựa trên tỷ lệ phần trăm
+        int maxEmployees = (int) Math.round(employees.size() * 0.95);
+
+        for (int i = 0; i < Math.min(employees.size(), maxEmployees); i++) {
+            Employee employee = employees.get(i);
             Attendance attendance = createWorkTime(employee, date);
             attendances.add(attendance);
             attendanceRepositories.save(attendance);
         }
         return attendances;
     }
+
 
     @Override
     public List<AttendanceDTO> getAllAttendances() {
@@ -174,12 +190,44 @@ public class AttendanceServiceImpl implements AttendanceService {
         return convertToDTO(updatedAttendance);
     }
 
-    @EventListener
-    public void onApplicationEvent(ContextRefreshedEvent event) {
+    @Override
+    public Map<LocalDate, Map<String, Long>> getTotalWorkAndOvertimeHours(int year, int month) {
+        Map<LocalDate, Map<String, Long>> result = new HashMap<>();
+
+        List<Attendance> attendances = attendanceRepositories.findByDateBetween(
+                LocalDate.of(year, month, 1),
+                LocalDate.of(year, month, YearMonth.of(year, month).lengthOfMonth())
+        );
+
+        for (Attendance attendance : attendances) {
+            LocalDate date = attendance.getDate();
+            Long workTime = attendance.getWorkTime();
+            Long overTime = attendance.getOverTime();
+            Long workTimeWithoutOvertime = (workTime > 8) ? workTime - overTime : workTime;
+
+            Map<String, Long> timeMap = result.getOrDefault(date, new HashMap<>());
+            timeMap.put("workTime", timeMap.getOrDefault("workTime", 0L) + workTime);
+            timeMap.put("overTime", timeMap.getOrDefault("overTime", 0L) + overTime);
+            timeMap.put("workTimeWithoutOvertime", timeMap.getOrDefault("workTimeWithoutOvertime", 0L) + workTimeWithoutOvertime);
+
+            result.put(date, timeMap);
+        }
+
+        return result;
+    }
+
+    @Scheduled(cron = "0 0 0 * * ?") // Chạy mỗi ngày vào lúc 00:00
+    public void createDailyWorkTimes() {
         LocalDate today = LocalDate.now();
         List<Attendance> attendancesToday = attendanceRepositories.findByDate(today);
         if (attendancesToday.isEmpty()) {
             createWorkTimes(today);
+        }
+
+        List<Contract> contracts = contractRepositories.findAll();
+        for (Contract contract : contracts) {
+            contract.checkContractStatus();
+            contractRepositories.save(contract);
         }
     }
 }

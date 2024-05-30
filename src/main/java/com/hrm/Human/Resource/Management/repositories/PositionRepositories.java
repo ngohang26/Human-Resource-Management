@@ -14,5 +14,7 @@ public interface PositionRepositories extends JpaRepository<Position, Long> {
     Optional<Position> findByPositionNameContaining(String keyword);
 
     Position findByPositionName(String positionName);
+
+    boolean existsByDepartmentId(Long id);
 }
 

@@ -55,12 +55,6 @@ public class Employee {
     //emergency_contact
     @Column
     private String nameContactER;
-//
-//    @Column
-//    private String positionName;
-//
-//    @Column
-//    private String departmentName;
 
     @ManyToOne
     @JsonManagedReference
@@ -70,9 +64,6 @@ public class Employee {
     @ManyToOne
     @JoinColumn(name = "position_id")
     private Position position;
-
-    @Column
-    private Boolean isDeleted;
 
     @Valid
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
@@ -95,9 +86,8 @@ public class Employee {
             inverseJoinColumns = @JoinColumn(name = "experience_id"))
     private List<Experiences> experiences = new ArrayList<>();
 
-
     public Employee() {
-        this.isDeleted = false;
+        this.employmentStatus = EmploymentStatus.ACTIVE;
     }
 
     @PostPersist
@@ -109,6 +99,28 @@ public class Employee {
         this.codeName = this.employeeCode + " - " + this.fullName;
     }
 
-    public void setIsDeleted(boolean b) {}
+    @ManyToOne
+    @JoinColumn(name = "termination_reason_id")
+    private TerminationReason terminationReason;
+
+    public enum EmploymentStatus {
+        ACTIVE, TERMINATED
+    }
+
+    private LocalDate terminationDate;
+
+    @Column
+    @Enumerated(EnumType.STRING)
+    private EmploymentStatus employmentStatus;
+
+    public void terminateEmployment(TerminationReason reason, LocalDate terminationDate) {
+        this.employmentStatus = EmploymentStatus.TERMINATED;
+        this.terminationReason = reason;
+        this.terminationDate = terminationDate;
+        if (this.contract != null) {
+            this.contract.setContractStatus(Contract.ContractStatus.CANCELLED);
+        }
+    }
+
 }
 

@@ -2,7 +2,9 @@ package com.hrm.Human.Resource.Management.service.impl;
 
 import com.hrm.Human.Resource.Management.dto.JobPositionDTO;
 import com.hrm.Human.Resource.Management.entity.JobPosition;
+import com.hrm.Human.Resource.Management.entity.Position;
 import com.hrm.Human.Resource.Management.repositories.JobPositionRepositories;
+import com.hrm.Human.Resource.Management.repositories.PositionRepositories;
 import com.hrm.Human.Resource.Management.response.ErrorResponse;
 import com.hrm.Human.Resource.Management.service.JobPositionService;
 import jakarta.persistence.EntityNotFoundException;
@@ -19,6 +21,9 @@ import java.util.stream.Collectors;
 public class JobPositionServiceImpl implements JobPositionService {
     @Autowired
     private JobPositionRepositories jobPositionRepositories;
+
+    @Autowired
+    PositionRepositories positionRepositories;
 
     @Override
     public Optional<JobPosition> findById(Long id) {
@@ -39,8 +44,9 @@ public class JobPositionServiceImpl implements JobPositionService {
     private JobPositionDTO convertToJobPositionDTO(JobPosition jobPosition) {
         JobPositionDTO jobPositionDTO = new JobPositionDTO();
         jobPositionDTO.setId(jobPosition.getId());
+        jobPositionDTO.setPosition(jobPosition.getPosition());
+        jobPositionDTO.setSkillsRequired(jobPosition.getSkillsRequired());
         jobPositionDTO.setJobPositionName(jobPosition.getJobPositionName());
-        jobPositionDTO.setJobDescription(jobPosition.getJobDescription());
         jobPositionDTO.setApplicationDeadline(jobPosition.getApplicationDeadline());
         jobPositionDTO.setCandidateCount(jobPosition.getCandidates().size());
         return jobPositionDTO;
@@ -48,10 +54,10 @@ public class JobPositionServiceImpl implements JobPositionService {
 
     @Override
     public ResponseEntity<?> addJobPosition(JobPosition jobPosition) {
-        Optional<JobPosition> existingJobPosition = jobPositionRepositories.findByJobPositionNameContaining(jobPosition.getJobPositionName());
-        if (existingJobPosition.isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("The jobPosition already exists.");
-        }
+        Position position = positionRepositories.findById(jobPosition.getPosition().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Position not found with id " + jobPosition.getPosition().getId()));
+
+        jobPosition.setPosition(position);
 
         try {
             JobPosition savedJobPosition = jobPositionRepositories.save(jobPosition);
@@ -65,11 +71,13 @@ public class JobPositionServiceImpl implements JobPositionService {
     public JobPosition updateJobPosition(Long id, JobPosition updatedJobPosition) {
         JobPosition existingJobPosition = jobPositionRepositories.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("JobPosition not found with id " + id));
+        Position position = positionRepositories.findById(updatedJobPosition.getPosition().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Position not found with id " + updatedJobPosition.getPosition().getId()));
 
-        existingJobPosition.setJobPositionName(updatedJobPosition.getJobPositionName());
-        existingJobPosition.setJobDescription(updatedJobPosition.getJobDescription());
+        existingJobPosition.setPosition(position);
         existingJobPosition.setSkillsRequired(updatedJobPosition.getSkillsRequired());
         existingJobPosition.setApplicationDeadline(updatedJobPosition.getApplicationDeadline());
+        existingJobPosition.setJobPositionName(updatedJobPosition.getJobPositionName());
         return jobPositionRepositories.save(existingJobPosition);
     }
 

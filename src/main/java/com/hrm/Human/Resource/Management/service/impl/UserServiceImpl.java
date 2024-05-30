@@ -66,6 +66,16 @@ public class UserServiceImpl implements UserService {
         return dto;
     }
 
+    @Override
+    public UserEmployeeDTO getUserById(Long id) {
+        User user = userRepositories.findById(id).orElse(null);
+        if (user != null) {
+            return convertToUserEmployeeDTO(user);
+        }
+        return null;
+    }
+
+
     @PostConstruct
     public void init() {
         roleRepositories.findAll().forEach(this::setDefaultPermissionsForRole);

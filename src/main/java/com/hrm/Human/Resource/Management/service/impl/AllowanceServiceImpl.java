@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
 
 @Service
@@ -78,28 +80,30 @@ public class AllowanceServiceImpl implements AllowanceService {
         );
     }
 
-    @Override
-    public List<Allowance> getAllowancesForEmployee(String employeeCode) {
-        Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
-        List<EmployeeAllowance> employeeAllowances = employeeAllowanceRepositories.findByEmployee(employee);
-        List<Allowance> allowances = new ArrayList<>();
-        for (EmployeeAllowance employeeAllowance : employeeAllowances) {
-            allowances.add(employeeAllowance.getAllowance());
-        }
-        return allowances;
-    }
 
-    @Override
-    public BigDecimal getTotalAllowance(String employeeCode) {
-        Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
-        if (employee == null) {
-            throw new RuntimeException("Employee not found");
-        }
-        List<EmployeeAllowance> employeeAllowances = employeeAllowanceRepositories.findByEmployee(employee);
-        BigDecimal totalAllowance = BigDecimal.ZERO;
-        for (EmployeeAllowance employeeAllowance : employeeAllowances) {
-            totalAllowance = totalAllowance.add(employeeAllowance.getAllowance().getAllowanceAmount());
-        }
-        return totalAllowance;
-    }
+
+//    @Override
+//    public List<Allowance> getAllowancesForEmployee(String employeeCode) {
+//        Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
+//        List<EmployeeAllowance> employeeAllowances = employeeAllowanceRepositories.findByEmployee(employee);
+//        List<Allowance> allowances = new ArrayList<>();
+//        for (EmployeeAllowance employeeAllowance : employeeAllowances) {
+//            allowances.add(employeeAllowance.getAllowance());
+//        }
+//        return allowances;
+//    }
+//
+//    @Override
+//    public BigDecimal getTotalAllowance(String employeeCode) {
+//        Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
+//        if (employee == null) {
+//            throw new RuntimeException("Employee not found");
+//        }
+//        List<EmployeeAllowance> employeeAllowances = employeeAllowanceRepositories.findByEmployee(employee);
+//        BigDecimal totalAllowance = BigDecimal.ZERO;
+//        for (EmployeeAllowance employeeAllowance : employeeAllowances) {
+//            totalAllowance = totalAllowance.add(employeeAllowance.getAllowance().getAllowanceAmount());
+//        }
+//        return totalAllowance;
+//    }
 }

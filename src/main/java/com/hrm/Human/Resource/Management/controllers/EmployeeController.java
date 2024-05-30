@@ -3,6 +3,7 @@ package com.hrm.Human.Resource.Management.controllers;
 import com.hrm.Human.Resource.Management.dto.EmployeeContractDTO;
 import com.hrm.Human.Resource.Management.dto.EmployeeDTO;
 import com.hrm.Human.Resource.Management.dto.GenderPercentage;
+import com.hrm.Human.Resource.Management.dto.TerminationRequest;
 import com.hrm.Human.Resource.Management.entity.Contract;
 import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.jwt.JwtTokenProvider;
@@ -26,7 +27,6 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/employees")
 public class EmployeeController {
-
     @Autowired
     private EmployeeRepositories employeeRepositories;
 
@@ -40,6 +40,18 @@ public class EmployeeController {
     @GetMapping(path = "getAllEmployees")
     public List<EmployeeDTO> getAllEmployees() {
         return employeeService.getEmployeesDTO();
+    }
+
+    @PreAuthorize("hasAuthority('ADD_EMPLOYEE')")
+    @GetMapping(path = "getAllEmployeesActive")
+    public List<Employee> getAllEmployeesActive() {
+        return employeeService.getActiveEmployees();
+    }
+
+    @PreAuthorize("hasAuthority('ADD_EMPLOYEE')")
+    @GetMapping(path = "getAllEmployeesTermination")
+    public List<Employee> getAllEmployeesTermination() {
+        return employeeService.getTerminatedEmployees();
     }
 
     @GetMapping(path = "/{id}")
@@ -60,7 +72,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/employee/{employeeCode}")
-    public ResponseEntity<EmployeeDTO> getEmployeeByEmployeeCode(@PathVariable String  employeeCode, @RequestHeader("Authorization") String token) {
+    public ResponseEntity<EmployeeDTO> getEmployeeByEmployeeCode(@PathVariable String employeeCode, @RequestHeader("Authorization") String token) {
         if (token.startsWith("Bearer ")) {
             token = token.substring(7);
         }
@@ -79,7 +91,6 @@ public class EmployeeController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
-
 
 
     @PreAuthorize("hasAuthority('ADD_EMPLOYEE')")
@@ -113,10 +124,10 @@ public class EmployeeController {
     }
 
     //??
-    @PostMapping("/undo/{id}")
-    public ResponseEntity<ErrorResponse> undoDelete(@PathVariable Long id) {
-        return employeeService.undoDeleteEmployee(id);
-    }
+//    @PostMapping("/undo/{id}")
+//    public ResponseEntity<ErrorResponse> undoDelete(@PathVariable Long id) {
+//        return employeeService.undoDeleteEmployee(id);
+//    }
 
     //??
     @DeleteMapping("/hardDelete/{id}")
@@ -179,5 +190,16 @@ public class EmployeeController {
     @GetMapping("/genderPercentage")
     public GenderPercentage getGenderPercentage() {
         return employeeService.getGenderPercentage();
+    }
+
+    @PreAuthorize("hasAuthority('VIEW_EMPLOYEE')")
+    @PutMapping("/{id}/terminate")
+    public ResponseEntity<?> terminateEmployment(@PathVariable Long id, @RequestBody TerminationRequest terminationRequest) {
+        ResponseEntity<ErrorResponse> response = employeeService.updateEmployeeStatus(
+                id,
+                terminationRequest.getReasonId(),
+                terminationRequest.getTerminationDate()
+        );
+        return response;
     }
 }

@@ -5,8 +5,10 @@ import com.hrm.Human.Resource.Management.dto.GenderPercentage;
 import com.hrm.Human.Resource.Management.entity.Contract;
 import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.response.ErrorResponse;
+import jakarta.transaction.Transactional;
 import org.springframework.http.ResponseEntity;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +24,10 @@ public interface EmployeeService {
     Employee save(Employee employee);
 
     List<Employee> getEmployees();
+
+    List<Employee> getActiveEmployees();
+
+    List<Employee> getTerminatedEmployees();
 
     List<Employee> getEmployeeEntities();
 
@@ -41,7 +47,7 @@ public interface EmployeeService {
 
     ResponseEntity<ErrorResponse> deleteEmployee(Long id);
 
-    ResponseEntity<ErrorResponse> undoDeleteEmployee(Long id);
+//    ResponseEntity<ErrorResponse> undoDeleteEmployee(Long id);
 
     ResponseEntity<ErrorResponse> hardDeleteEmployee(Long id);
 
@@ -58,4 +64,7 @@ public interface EmployeeService {
     List<String> getEmployeeCodes();
 
     GenderPercentage getGenderPercentage();
+
+    @Transactional
+    ResponseEntity<ErrorResponse> updateEmployeeStatus(Long id, Long reasonId, LocalDate terminationDate);
 }

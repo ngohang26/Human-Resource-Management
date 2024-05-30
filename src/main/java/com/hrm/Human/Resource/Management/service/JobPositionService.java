@@ -15,10 +15,9 @@ public interface JobPositionService {
 
     List<JobPositionDTO> getAllJobPositions();
 
-    ResponseEntity<?> addJobPosition(JobPosition position);
+    ResponseEntity<?> addJobPosition(JobPosition jobPosition);
 
-    JobPosition updateJobPosition(Long id, JobPosition positionDetails);
-
+    JobPosition updateJobPosition(Long id, JobPosition updatedJobPosition);
 
     ResponseEntity<ErrorResponse> hardDeleteJobPosition(Long id);
 }

@@ -1,9 +1,11 @@
 package com.hrm.Human.Resource.Management.controllers;
 
 import com.hrm.Human.Resource.Management.entity.EmployeeSalary;
+import com.hrm.Human.Resource.Management.entity.EmployeeSalaryRecord;
 import com.hrm.Human.Resource.Management.jwt.JwtTokenProvider;
 import com.hrm.Human.Resource.Management.service.AttendanceService;
 import com.hrm.Human.Resource.Management.service.EmployeeSalaryService;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +41,11 @@ public class EmployeeSalaryController {
     }
 
     @PreAuthorize("hasAuthority('VIEW_SALARY')")
+    @GetMapping("/tax-employeee/{employeeCode}/{year}/{month}")
+    public BigDecimal getTax(@PathVariable String employeeCode, @PathVariable int year, @PathVariable int month) {
+        return employeeSalaryService.calculateIncomeTaxForEmployee(employeeCode, year, month);
+    }
+    @PreAuthorize("hasAuthority('VIEW_SALARY')")
     @GetMapping("/totalIncome/{employeeCode}/{year}/{month}")
     public ResponseEntity<BigDecimal> getTotalIncome(@PathVariable String employeeCode, @PathVariable int year, @PathVariable int month) {
         BigDecimal totalIncome = employeeSalaryService.calculateTotalIncome(employeeCode, year, month);
@@ -52,50 +59,20 @@ public class EmployeeSalaryController {
         return new ResponseEntity<>(totalOvertimeHours, HttpStatus.OK);
     }
 
-    @GetMapping("/salaryDetails/{employeeCode}/{year}/{month}")
-    public ResponseEntity<?> getSalaryDetails(@PathVariable String employeeCode, @PathVariable int year, @PathVariable int month, @RequestHeader("Authorization") String token) {
-        if (token.startsWith("Bearer ")) {
-            token = token.substring(7);
-        }
-
-        String username = tokenProvider.getUsernameFromJWT(token);
-        List<String> authorities = tokenProvider.getAuthoritiesFromJWT(token); // giả sử bạn có phương thức để lấy danh sách vai trò từ JWT
-
-        if (!authorities.contains("ADD_SALARY") && (!username.equals(employeeCode) || !authorities.contains("VIEW_SALARY"))) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
-
-        if (!isValidEmployeeCode(employeeCode)) {
-            throw new RuntimeException("Mã nhân viên không hợp lệ.");
-        }
-
-        if (!employeeSalaryService.employeeExists(employeeCode)) {
-            throw new RuntimeException("Nhân viên có mã " + employeeCode + " không tồn tại.");
-        }
-
-        if (!employeeSalaryService.employeeDataExists(employeeCode, year, month)) {
-            throw new RuntimeException("Dữ liệu " + month + "/" + year + " của nhân viên " + employeeCode + " không tồn tại.");
-        }
-
-        EmployeeSalary details = employeeSalaryService.getEmployeeSalaryDetails(employeeCode, year, month);
-        return ResponseEntity.ok(details);
-    }
-
-
     private boolean isValidEmployeeCode(String employeeCode) {
         String pattern = "^[a-zA-Z0-9]+$";
         return Pattern.matches(pattern, employeeCode);
     }
 
-    @PreAuthorize("hasAuthority('ADD_SALARY')")
-    @GetMapping("/allSalaryDetails/{year}/{month}")
-    public ResponseEntity<?> getAllSalaryDetails(@PathVariable int year, @PathVariable int month) {
-        List<EmployeeSalary> allDetails = employeeSalaryService.getAllEmployeeSalaryDetails(year, month);
+    @PreAuthorize("hasAuthority('VIEW_SALARY')")
+    @GetMapping("/allSalaryRecords/{year}/{month}")
+    public ResponseEntity<?> getAllSalaryRecords(@PathVariable int year, @PathVariable int month) {
+        List<EmployeeSalaryRecord> allRecords = employeeSalaryService.getAllEmployeeSalaryRecords(year, month);
 
-        if (allDetails.isEmpty()) {
+        if (allRecords.isEmpty()) {
             return ResponseEntity.noContent().build();
         } else {
-            return ResponseEntity.ok(allDetails);
+            return ResponseEntity.ok(allRecords);
         }
     }
 
@@ -120,18 +97,54 @@ public class EmployeeSalaryController {
         return ResponseEntity.ok(totalOvertimeHoursPerMonth);
     }
 
+//    @PreAuthorize("hasAuthority('VIEW_SALARY')")
+//    @GetMapping("/totalWorkingHours/{year}/{month}")
+//    public ResponseEntity<Map<String, Long>> getTotalWorkingHours(@PathVariable int year, @PathVariable int month) {
+//        Map<String, Long> totalWorkingHours = employeeSalaryService.calculateTotalWorkingHoursForEachEmployee(year, month);
+//        return ResponseEntity.ok(totalWorkingHours);
+//    }
+
     @PreAuthorize("hasAuthority('VIEW_SALARY')")
-    @GetMapping("/totalWorkingHours/{year}/{month}")
-    public ResponseEntity<Map<String, Long>> getTotalWorkingHours(@PathVariable int year, @PathVariable int month) {
-        Map<String, Long> totalWorkingHours = employeeSalaryService.calculateTotalWorkingHoursForEachEmployee(year, month);
-        return ResponseEntity.ok(totalWorkingHours);
+    @PostMapping("/updateSalaryRecord/{employeeCode}/{year}/{month}")
+    public ResponseEntity<?> updateSalaryRecord(@PathVariable String employeeCode, @PathVariable int year, @PathVariable int month) {
+        employeeSalaryService.updateEmployeeSalaryRecord(employeeCode, year, month);
+        return ResponseEntity.ok().build();
     }
 
     @PreAuthorize("hasAuthority('VIEW_SALARY')")
-    @GetMapping("/totalSalary/{year}/{month}")
-    public ResponseEntity<BigDecimal> getTotalSalary(@PathVariable int year, @PathVariable int month) {
-        BigDecimal totalSalary = employeeSalaryService.calculateTotalSalaryForAllEmployees(year, month);
-        return ResponseEntity.ok(totalSalary);
+    @PostMapping("/updateAllSalaryRecords/{year}/{month}")
+    public ResponseEntity<?> updateAllSalaryRecords(@PathVariable int year, @PathVariable int month) {
+        employeeSalaryService.updateAllEmployeeSalaryRecords(year, month);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/salaryRecordDetails/{employeeCode}/{year}/{month}")
+    public ResponseEntity<?> getSalaryRecordDetails(@PathVariable String employeeCode, @PathVariable int year, @PathVariable int month, @RequestHeader("Authorization") String token) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        String username = tokenProvider.getUsernameFromJWT(token);
+        List<String> authorities = tokenProvider.getAuthoritiesFromJWT(token); // giả sử bạn có phương thức để lấy danh sách vai trò từ JWT
+
+        if (!authorities.contains("ADD_SALARY") && (!username.equals(employeeCode) || !authorities.contains("VIEW_SALARY"))) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        if (!isValidEmployeeCode(employeeCode)) {
+            throw new RuntimeException("Mã nhân viên không hợp lệ.");
+        }
+
+        if (!employeeSalaryService.employeeExists(employeeCode)) {
+            throw new RuntimeException("Nhân viên có mã " + employeeCode + " không tồn tại.");
+        }
+
+        if (!employeeSalaryService.employeeDataExists(employeeCode, year, month)) {
+            throw new RuntimeException("Dữ liệu " + month + "/" + year + " của nhân viên " + employeeCode + " không tồn tại.");
+        }
+        EmployeeSalaryRecord record = employeeSalaryService.getEmployeeSalaryRecord(employeeCode, year, month);
+
+            return ResponseEntity.ok(record);
     }
 
 }

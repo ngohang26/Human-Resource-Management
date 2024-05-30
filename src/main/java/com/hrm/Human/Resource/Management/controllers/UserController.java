@@ -54,6 +54,16 @@ public class UserController {
         return userService.getAllUsers();
     }
 
+    @PreAuthorize("hasAuthority('VIEW_EMPLOYEE')")
+    @GetMapping("/{id}")
+    public ResponseEntity<UserEmployeeDTO> getUserById(@PathVariable Long id) {
+        UserEmployeeDTO userDto = userService.getUserById(id);
+        if (userDto != null) {
+            return ResponseEntity.ok(userDto);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
     @PostMapping("/register")
     public User createUser(@RequestBody UserRegistrationDTO userRegistration) {
@@ -86,7 +96,7 @@ public class UserController {
         }
     }
 
-    @PreAuthorize("hasAuthority('VIEW_USER')")
+    @PreAuthorize("hasAuthority('VIEW_EMPLOYEE')")
     @GetMapping("/{id}/permissions")
     public Set<Map<String, String>> getUserPermissions(@PathVariable Long id) {
         return userService.getUserPermissions(id);
@@ -143,6 +153,7 @@ public class UserController {
         return ResponseEntity.ok(message);
     }
 
+    // kh dung
     @PreAuthorize("hasAuthority('VIEW_USER')")
     @GetMapping("/roles/{id}/permissions")
     public Set<Permission> getRolePermissions(@PathVariable Long id) {
@@ -151,6 +162,7 @@ public class UserController {
         return role.getPermissions();
     }
 
+    // kh dung
     @PreAuthorize("hasAuthority('VIEW_USER')")
     @GetMapping("/role/{id}/permissions")
     public Set<Map<String, String>> getRolePermission(@PathVariable Long id) {

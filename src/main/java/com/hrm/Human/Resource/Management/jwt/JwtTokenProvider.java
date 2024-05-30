@@ -1,7 +1,10 @@
 package com.hrm.Human.Resource.Management.jwt;
 
+import com.hrm.Human.Resource.Management.entity.Employee;
+import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
 import com.hrm.Human.Resource.Management.service.MyUserDetails;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import io.jsonwebtoken.*;
@@ -18,6 +21,8 @@ import javax.crypto.SecretKey;
 
 @Component
 public class JwtTokenProvider {
+    @Autowired
+    private EmployeeRepositories employeeRepositories;
 
     @Value("${app.jwtExpirationInMs}")
     private int jwtExpirationInMs;
@@ -31,17 +36,23 @@ public class JwtTokenProvider {
 
         List<String> authorities = myUserDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList());
 
-        return Jwts.builder().setSubject(Long.toString(
-                myUserDetails.getUser().getId()))
+        // Lấy thông tin Employee từ Database để lấy positionName
+        Employee employee = employeeRepositories.findByEmployeeCode(myUserDetails.getUsername());
+        String positionName = null;
+        if (employee != null) {
+            positionName = employee.getPosition().getPositionName();
+        }
+
+        return Jwts.builder().setSubject(Long.toString(myUserDetails.getUser().getId()))
                 .claim("username", myUserDetails.getUsername())
                 .claim("roleName", myUserDetails.getUser().getRole().getName())
                 .claim("userId", myUserDetails.getUser().getId())
                 .claim("email", myUserDetails.getUser().getEmail())
                 .claim("authorities", authorities)
+                .claim("positionName", positionName) // Thêm thông tin về positionName vào claims
                 .setIssuedAt(new Date()).setExpiration(expiryDate).signWith(jwtSecret)
                 .compact();
     }
-
 
     public Long getUserIdFromJWT(String token) {
         Claims claims = Jwts.parser().setSigningKey(jwtSecret) // Use the new secret key

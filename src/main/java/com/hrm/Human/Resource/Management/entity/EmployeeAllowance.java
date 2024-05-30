@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 
 @Getter
 @Setter
@@ -25,8 +26,8 @@ public class EmployeeAllowance {
     private Allowance allowance;
 
     @Column(nullable = false)
-    private LocalDate startDate;
+    private YearMonth startDate;
 
-    @Column
-    private LocalDate endDate;
+    @Column(nullable = false)
+    private YearMonth endDate;
 }

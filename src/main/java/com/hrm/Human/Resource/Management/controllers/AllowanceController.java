@@ -60,10 +60,5 @@ public class AllowanceController {
         return allowanceService.hardDeleteAllowance(id);
     }
 
-    @PreAuthorize("hasAuthority('VIEW_ALLOWANCE')")
-    @GetMapping("/calculateTotalAllowanceAmount")
-    public ResponseEntity<BigDecimal> getTotalAllowance(@PathVariable String employeeCode) {
-        BigDecimal totalAllowance = allowanceService.getTotalAllowance(employeeCode);
-        return ResponseEntity.ok(totalAllowance);
-    }
+
 }

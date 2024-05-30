@@ -4,6 +4,7 @@ import com.hrm.Human.Resource.Management.entity.Department;
 import com.hrm.Human.Resource.Management.entity.Employee;
 import com.hrm.Human.Resource.Management.repositories.DepartmentRepositories;
 import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
+import com.hrm.Human.Resource.Management.repositories.PositionRepositories;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -13,57 +14,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-//@RestController
-//@RequestMapping("/departments")
-//public class DepartmentController {
-//
-//    @Autowired
-//    private DepartmentRepositories departmentRepositories;
-//
-//    @Autowired
-//    private EmployeeRepositories employeeRepositories;
-//
-//    @GetMapping(path = "getAllDepartments")
-//    public List<Department> getAllDepartments() {
-//        return departmentRepositories.findAll();
-//    }
-//
-////        @GetMapping(path = "/{id}")
-////        public ResponseEntity<Employee> getEmployeeById(@PathVariable Long id) {
-////            Optional<Employee> employee = employeeRepositories.findById(id);
-////            return employee.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
-////        }
-//
-//    @PostMapping("/addDepartment")
-//    public ResponseEntity<?> addEmployee(@RequestBody Department department, @RequestParam String codeName) {
-//        try {
-//            Employee manager = employeeRepositories.findByCodeName(codeName);
-//            if (manager == null) {
-//                return new ResponseEntity<>("Employee not found", HttpStatus.NOT_FOUND);
-//            }
-//            department.setManager(manager);
-//
-//            Department savedDepartment = departmentRepositories.save(department);
-//
-//            // Create a new object to return
-//            Map<String, Object> response = new HashMap<>();
-//            response.put("department", savedDepartment);
-//            response.put("managerCode", manager.getEmployeeCode());
-//            response.put("managerName", manager.getFullName());
-//
-//            return new ResponseEntity<>(response, HttpStatus.CREATED);
-//        } catch (DataIntegrityViolationException e) {
-//            return ResponseEntity.status(HttpStatus.CONFLICT).body("The department already taken.");
-//        } catch (Exception e) {
-//            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-//        }
-//
-//    }
-//}
 
 @RestController
 @RequestMapping("/departments")
 public class DepartmentController {
+
+    @Autowired
+    private PositionRepositories positionRepositories;
 
     @Autowired
     private DepartmentRepositories departmentRepositories;
@@ -166,12 +123,17 @@ public class DepartmentController {
     public ResponseEntity<?> deleteDepartment(@PathVariable Long id) {
         try {
             if (!departmentRepositories.existsById(id)) {
-                return new ResponseEntity<>("Department not found", HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>("Không tìm thấy phòng ban", HttpStatus.NOT_FOUND);
+            }
+            // Kiểm tra xem có bản ghi nào trong bảng 'position' tham chiếu đến 'department_id' này không
+            if (positionRepositories.existsByDepartmentId(id)) {
+                return new ResponseEntity<>("Không thể xóa phòng ban vì nó đang được tham chiếu bởi một chức vụ", HttpStatus.CONFLICT);
             }
             departmentRepositories.deleteById(id);
-            return new ResponseEntity<>("Department deleted successfully", HttpStatus.OK);
+            return new ResponseEntity<>("Xóa phòng ban thành công", HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Có lỗi xảy ra khi xóa phòng ban", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 }

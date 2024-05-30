@@ -33,4 +33,6 @@ public interface AttendanceRepositories extends JpaRepository<Attendance, Long> 
     List<Attendance> findByYearAndMonth(@Param("year") int year, @Param("month") int month);
 
     List<Attendance> findByEmployee_EmployeeCodeAndDateBetween(String employeeCode, LocalDate startDate, LocalDate endDate);
-}
+
+    @Query("SELECT SUM(a.workTime) FROM Attendance a WHERE FUNCTION('MONTH', a.date) = :month AND FUNCTION('YEAR', a.date) = :year")
+    long sumWorkTimeByMonthAndYear(int month, int year);}

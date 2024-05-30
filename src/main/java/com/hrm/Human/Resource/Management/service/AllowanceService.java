@@ -19,8 +19,4 @@ public interface AllowanceService {
     Allowance updateAllowance(Long id, Allowance updatedAllowance);
 
     ResponseEntity<ErrorResponse> hardDeleteAllowance(Long id);
-
-    List<Allowance> getAllowancesForEmployee(String employeeCode);
-
-    BigDecimal getTotalAllowance(String employeeCode);
 }

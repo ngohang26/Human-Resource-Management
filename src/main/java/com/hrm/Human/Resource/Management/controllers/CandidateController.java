@@ -2,6 +2,7 @@ package com.hrm.Human.Resource.Management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrm.Human.Resource.Management.dto.CandidateDTO;
+import com.hrm.Human.Resource.Management.dto.CandidateStatusCount;
 import com.hrm.Human.Resource.Management.dto.CandidateUpdateDTO;
 import com.hrm.Human.Resource.Management.entity.Candidate;
 import com.hrm.Human.Resource.Management.service.impl.CandidateService;
@@ -42,7 +43,7 @@ public class CandidateController {
         return candidateService.getCandidateById(id);
     }
 
-    @PreAuthorize("hasAuthority('ADD_CANDIDATE')")
+    @PreAuthorize("hasAuthority('ADD_CANDIDATE') or hasAuthority('VIEW_EMPLOYEE')")
     @GetMapping(path = "/getAllCandidates")
     public List<CandidateDTO> getAllCandidate() {
         return candidateService.getCandidates();
@@ -58,10 +59,22 @@ public class CandidateController {
     @GetMapping("/getCandidateCountByStatus")
     public ResponseEntity<?> getCandidateCountByStatus() {
         try {
-            Map<Candidate.CandidateStatus, Long> countByStatus = candidateService.getCandidateCountByStatus();
+            Map<Candidate.CandidateStatus, CandidateStatusCount> countByStatus = candidateService.getCandidateCountByStatus();
             return new  ResponseEntity<>(countByStatus, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
- }
+
+    @PreAuthorize("hasAuthority('ADD_CANDIDATE')")
+    @GetMapping("/getCandidatesHiredByMonth/{year}/{month}")
+    public ResponseEntity<?> getCandidatesHiredByMonth(@PathVariable int year, @PathVariable int month) {
+        try {
+            Map<String, Long> candidatesHiredByMonth = candidateService.getCandidatesHiredByMonth(year, month);
+            return new ResponseEntity<>(candidatesHiredByMonth, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+}

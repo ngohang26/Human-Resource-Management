@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -149,7 +150,7 @@ public class CandidateService {
                         candidate.setCurrentStatus(Candidate.CandidateStatus.CONTRACT_SIGNED);
                         convertCandidateToEmployee(candidate.getId(), identityCardNumber);
                         emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
-                                + candidate.getJobPosition().getJobPositionName(), "Chúc mừng! Bạn đã ký hợp đồng và trở thành một phần của đội ngũ của chúng tôi.");
+                                + candidate.getJobPosition().getPosition().getPositionName(), "Chúc mừng! Bạn đã ký hợp đồng và trở thành một phần của đội ngũ của chúng tôi.");
                     }
                     break;
                 case REFUSE:
@@ -160,7 +161,7 @@ public class CandidateService {
                     }
                     candidate.setCurrentStatus(Candidate.CandidateStatus.REFUSE);
                     emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
-                            + candidate.getJobPosition().getJobPositionName(), "Rất tiếc, hồ sơ của bạn không phù hợp với yêu cầu của chúng tôi.");
+                            + candidate.getJobPosition().getPosition().getPositionName(), "Rất tiếc, hồ sơ của bạn không phù hợp với yêu cầu của chúng tôi.");
                     break;
                 default:
                     throw new IllegalArgumentException("Invalid status");
@@ -184,7 +185,7 @@ public class CandidateService {
             candidate.setFirstInterviewStatus(Candidate.InterviewStatus.PENDING);
             String interviewSchedule = "<p>Xin chào, \n </p>" + "\n"
                     + "<p>Cảm ơn bạn đã nộp hồ sơ ứng tuyển vào vị trí <b style=\"color:#9a6c8e\">“"
-                    + candidate.getJobPosition().getJobPositionName()
+                    + candidate.getJobPosition().getPosition().getPositionName()
                     + "”</b> tại <b>Tolo</b></p>" + "\n"
                     + "<p>Chúng tôi rất ấn tượng với kinh nghiệm và kỹ năng của bạn, và chúng tôi muốn mời bạn tham gia một cuộc phỏng vấn.</p>"
                     + "<p>Chúng tôi muốn đặt lịch phỏng vấn vào</p>" + dateTime.toString()
@@ -201,7 +202,7 @@ public class CandidateService {
                     + "<b>Tolo</b><p>Việt Nam</p>";
 
             emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
-                    + candidate.getJobPosition().getJobPositionName(), interviewSchedule);
+                    + candidate.getJobPosition().getPosition().getPositionName(), interviewSchedule);
             candidateRepositories.save(candidate);
             return ResponseEntity.ok("Interview time set successfully for candidate with ID: " + id);
         }
@@ -221,7 +222,7 @@ public class CandidateService {
             candidate.setSecondInterviewStatus(Candidate.InterviewStatus.PENDING);
             String secondInterviewSchedule = "<p>Xin chào, \n </p>" + "\n"
                     + "<p>Cảm ơn bạn đã tham gia cuộc phỏng vấn đầu tiên cho vị trí <b style=\"color:#9a6c8e\">“"
-                    + candidate.getJobPosition().getJobPositionName()
+                    + candidate.getJobPosition().getPosition().getPositionName()
                     + "”</b> tại <b>Tolo</b></p>" + "\n"
                     + "<p>Chúng tôi rất ấn tượng với kinh nghiệm và kỹ năng của bạn, và chúng tôi muốn mời bạn tham gia một cuộc phỏng vấn thứ hai.</p>"
                     + "<p>Chúng tôi muốn đặt lịch phỏng vấn thứ hai vào</p>" + dateTime.toString()
@@ -238,7 +239,7 @@ public class CandidateService {
                     + "<b>Tolo</b><p>Việt Nam</p>";
 
             emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
-                    + candidate.getJobPosition().getJobPositionName(), secondInterviewSchedule);
+                    + candidate.getJobPosition().getPosition().getPositionName(), secondInterviewSchedule);
             candidateRepositories.save(candidate);
             return ResponseEntity.ok("Second interview time set successfully for candidate with ID: " + id);
         }
@@ -273,7 +274,7 @@ public class CandidateService {
                             + "<p><b>Trân trọng</b></p>"
                             + "<b>Tolo</b><p>Việt Nam</p>";
             emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
-                    + candidate.getJobPosition().getJobPositionName(), offerDetails);
+                    + candidate.getJobPosition().getPosition().getPositionName(), offerDetails);
             candidateRepositories.save(candidate);
             return ResponseEntity.ok("Job offer made successfully to candidate with ID: " + id);
         }
@@ -284,7 +285,7 @@ public class CandidateService {
         Candidate candidate = getCandidate(candidateId);
         if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.CONTRACT_SIGNED) {
             if (identityCardNumber != null && !identityCardNumber.isEmpty()) { // Kiểm tra null và rỗng
-                System.out.println(identityCardNumber);
+//                System.out.println(identityCardNumber);
                 Employee employee = new Employee();
                 PersonalInfo personalInfo = new PersonalInfo();
                 Contract contract;
@@ -325,7 +326,7 @@ public class CandidateService {
                 employee.setContract(contract);
                 employeeRepositories.save(employee);
             } else {
-                System.out.println("vcc");
+                System.out.println(":))");
             }
 
         }
@@ -366,7 +367,7 @@ public class CandidateService {
         CandidateDTO candidateDTO = convertToDTO(savedCandidate);
         String htmlContent = "<p>Xin chào, \n </p>" + "\n"
                 + "<p>Chúng tôi xác nhận rằng chúng tôi đã nhận được đơn ứng tuyển của bạn cho vị trí <b style=\"color:#9a6c8e\">“"
-                + candidate.getJobPosition().getJobPositionName()
+                + candidate.getJobPosition().getPosition().getPositionName()
                 + "”</b> tại <b>Tolo</b></p>" + "\n"
                 + "<p>Chúng tôi sẽ xem xét hồ sơ và liên hệ với bạn.</p>"
                 + "<hr style=\"border: none; border-top: 1px solid #ddd;\">"
@@ -381,7 +382,7 @@ public class CandidateService {
                 + "<br><br><b>Tolo</b><p>Việt Nam</p>";
 
         emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: “"
-                + candidate.getJobPosition().getJobPositionName() + "”", htmlContent);
+                + candidate.getJobPosition().getPosition().getPositionName() + "”", htmlContent);
         return candidateDTO;
     }
 
@@ -431,9 +432,23 @@ public class CandidateService {
         return modelMapper.map(candidate, CandidateDTO.class);
     }
 
-    public Map<Candidate.CandidateStatus, Long> getCandidateCountByStatus() {
-        return candidateRepositories.findAll().stream()
+    public Map<Candidate.CandidateStatus, CandidateStatusCount> getCandidateCountByStatus() {
+        List<Candidate> candidates = candidateRepositories.findAll();
+        Long total = (long) candidates.size();
+
+        Map<Candidate.CandidateStatus, Long> countMap = candidates.stream()
                 .collect(Collectors.groupingBy(Candidate::getCurrentStatus, Collectors.counting()));
+
+        Map<Candidate.CandidateStatus, CandidateStatusCount> result = new HashMap<>();
+        for (Map.Entry<Candidate.CandidateStatus, Long> entry : countMap.entrySet()) {
+            CandidateStatusCount statusCount = new CandidateStatusCount();
+            statusCount.setStatus(entry.getKey());
+            statusCount.setCount(entry.getValue());
+            statusCount.setPercentage(100.0 * entry.getValue() / total);
+            result.put(entry.getKey(), statusCount);
+        }
+
+        return result;
     }
 
     public List<SkillName> getAllSkillNames() {
@@ -443,4 +458,24 @@ public class CandidateService {
     public List<ExperienceName> getAllExperienceNames() {
         return experienceNameRepositories.findAll();
     }
+
+    public Map<String, Long> getCandidatesHiredByMonth(int year, int month) {
+        YearMonth ym = YearMonth.of(year, month);
+
+        LocalDate startOfMonth = ym.atDay(1);
+        LocalDate endOfMonth = ym.atEndOfMonth();
+
+        List<Candidate> candidates = candidateRepositories.findAllByCurrentStatusAndDateAppliedBetween(
+                Candidate.CandidateStatus.CONTRACT_SIGNED, startOfMonth, endOfMonth);
+
+        Map<String, Long> candidatesHiredByDay = candidates.stream()
+                .collect(Collectors.groupingBy(
+                        candidate -> String.valueOf(candidate.getDateApplied().getDayOfMonth()),
+                        Collectors.counting()
+                ));
+
+        return candidatesHiredByDay;
+    }
+
+
 }

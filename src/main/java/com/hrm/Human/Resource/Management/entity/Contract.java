@@ -36,7 +36,17 @@ public class Contract {
     @Column(nullable = false)
     private BigDecimal monthlySalary;
 
-    public Contract() {}
+    public enum ContractStatus {
+        ACTIVE, EXPIRED, CANCELLED
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ContractStatus contractStatus;
+
+    public Contract() {
+        this.contractStatus = ContractStatus.ACTIVE;
+    }
     @PostPersist
     public void generateContractCode() {
         LocalDate date = LocalDate.now();
@@ -46,5 +56,12 @@ public class Contract {
     }
 
     public void setEmployee(Employee employee) {
+    }
+
+    public void checkContractStatus() {
+        LocalDate today = LocalDate.now();
+        if (today.isAfter(this.endDate)) {
+            this.contractStatus = ContractStatus.EXPIRED;
+        }
     }
 }

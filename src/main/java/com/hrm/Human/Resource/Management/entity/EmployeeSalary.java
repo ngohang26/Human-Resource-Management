@@ -12,7 +12,7 @@ import java.util.Map;
 public class EmployeeSalary {
     private Long id;
     private String employeeCode;
-    private String employeeName;
+    private String fullName;
     private BigDecimal monthlySalary;
     private BigDecimal totalAllowance;
     private BigDecimal incomeTax;
@@ -27,7 +27,7 @@ public class EmployeeSalary {
     private BigDecimal overTimeSalary;
     private Long totalOvertimeHours;
     private BigDecimal netSalary;
-    private Position position;
-    private Department department;
+    private String departmentName;
+    private String positionName;
 }
 

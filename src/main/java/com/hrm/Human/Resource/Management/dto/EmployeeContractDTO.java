@@ -1,5 +1,6 @@
 package com.hrm.Human.Resource.Management.dto;
 
+import com.hrm.Human.Resource.Management.entity.Contract;
 import com.hrm.Human.Resource.Management.entity.Department;
 import com.hrm.Human.Resource.Management.entity.Position;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ public class EmployeeContractDTO {
     private LocalDate startDate;
     private LocalDate endDate;
     private LocalDate signDate;
+    private Contract.ContractStatus contractStatus;
     private String noteContract;
     private int numberOfSignatures;
     private String contractCode;

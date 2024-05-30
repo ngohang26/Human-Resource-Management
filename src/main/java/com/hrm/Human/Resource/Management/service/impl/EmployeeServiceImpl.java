@@ -7,6 +7,7 @@ import com.hrm.Human.Resource.Management.response.ErrorResponse;
 import com.hrm.Human.Resource.Management.response.ResourceNotFoundException;
 import com.hrm.Human.Resource.Management.service.EmployeeService;
 import com.hrm.Human.Resource.Management.service.PositionService;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
@@ -14,10 +15,13 @@ import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -54,6 +58,9 @@ public class EmployeeServiceImpl implements EmployeeService {
     private ExperienceNameRepositories experienceNameRepositories;
 
     @Autowired
+    private TerminationReasonRepositories terminationReasonRepositories;
+
+    @Autowired
     private PositionService positionService;
 
     @Autowired
@@ -80,6 +87,16 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public List<Employee> getEmployees() {
         return employeeRepositories.findAll();
+    }
+
+    @Override
+    public List<Employee> getActiveEmployees() {
+        return employeeRepositories.findAllByEmploymentStatus(Employee.EmploymentStatus.ACTIVE);
+    }
+
+    @Override
+    public List<Employee> getTerminatedEmployees() {
+        return employeeRepositories.findAllByEmploymentStatus(Employee.EmploymentStatus.TERMINATED);
     }
 
     @Override
@@ -134,12 +151,11 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (existingEmployee != null) {
             throw new RuntimeException("Đã tồn tại nhân viên với số CCCD " + identityCardNumber);
         }
-        Position position = positionRepositories.findById(employee.getPosition().getId())
+    Position position = positionRepositories.findById(employee.getPosition().getId())
             .orElseThrow(() -> new IllegalArgumentException("Position not found with id " + employee.getPosition().getId()));
     employee.setPosition(position);
 
-    Department department = departmentRepositories.findById(employee.getDepartment().getId())
-            .orElseThrow(() -> new IllegalArgumentException("Department not found with id " + employee.getDepartment().getId()));
+    Department department = position.getDepartment();
     employee.setDepartment(department);
 
     for (Skills skill : employee.getSkills()) {
@@ -220,8 +236,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .orElseThrow(() -> new IllegalArgumentException("Position not found with id " + employeeDetailsDTO.getPosition().getId()));
         employee.setPosition(position);
 
-        Department department = departmentRepositories.findById(employeeDetailsDTO.getDepartment().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Department not found with id " + employeeDetailsDTO.getDepartment().getId()));
+        Department department = position.getDepartment();
         employee.setDepartment(department);
 
         employee = employeeRepositories.save(employee);
@@ -242,7 +257,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         Optional<Employee> employee = employeeRepositories.findById(id);
         if (employee.isPresent()) {
             Employee p = employee.get();
-            p.setIsDeleted(true);
             employeeRepositories.save(p);
             return ResponseEntity.status(HttpStatus.OK).body(
                     new ErrorResponse("ok", "Delete employee successfully", "")
@@ -253,21 +267,20 @@ public class EmployeeServiceImpl implements EmployeeService {
         );
     }
 
-    @Override
-    public ResponseEntity<ErrorResponse> undoDeleteEmployee(Long id) {
-        Optional<Employee> employee = employeeRepositories.findById((id));
-        if (employee.isPresent()) {
-            Employee p = employee.get();
-            p.setIsDeleted(false);
-            employeeRepositories.save(p);
-            return ResponseEntity.status((HttpStatus.OK)).body(
-                    new ErrorResponse("ok", "Undo employee successfully", "")
-            );
-        }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                new ErrorResponse("failed", "Cannot fond employee to undo", "")
-        );
-    }
+//    @Override
+//    public ResponseEntity<ErrorResponse> undoDeleteEmployee(Long id) {
+//        Optional<Employee> employee = employeeRepositories.findById((id));
+//        if (employee.isPresent()) {
+//            Employee p = employee.get();
+//            employeeRepositories.save(p);
+//            return ResponseEntity.status((HttpStatus.OK)).body(
+//                    new ErrorResponse("ok", "Undo employee successfully", "")
+//            );
+//        }
+//        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+//                new ErrorResponse("failed", "Cannot fond employee to undo", "")
+//        );
+//    }
 
     @Override
     public ResponseEntity<ErrorResponse> hardDeleteEmployee(Long id) {
@@ -295,7 +308,6 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .map(employee -> {
                     Contract contract = employee.getContract();
                     if (contract == null) {
-                        // Nếu không tìm thấy hợp đồng, bỏ qua nhân viên này
                         return null;
                     }
                     return new EmployeeContractDTO(
@@ -307,6 +319,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                             contract.getStartDate(),
                             contract.getEndDate(),
                             contract.getSignDate(),
+                            contract.getContractStatus(),
                             contract.getNoteContract(),
                             contract.getNumberOfSignatures(),
                             contract.getContractCode(),
@@ -342,13 +355,13 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employee.getContract().getStartDate(),
                 employee.getContract().getEndDate(),
                 employee.getContract().getSignDate(),
+                employee.getContract().getContractStatus(),
                 employee.getContract().getNoteContract(),
                 employee.getContract().getNumberOfSignatures(),
                 employee.getContract().getContractCode(),
                 employee.getContract().getMonthlySalary()
         );
     }
-
     @Override
     public EmployeeContractDTO updateContract(String employeeCode, Contract contract) {
         Employee employee = employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
@@ -359,15 +372,16 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (existingContract == null) {
             throw new IllegalStateException("No contract found for this employee");
         }
+
         BeanUtils.copyProperties(contract, existingContract, "id");
-        contract = existingContract;
 
-        contract.setEmployee(employee);
-        contract = contractRepositories.save(contract);
+        existingContract.setEmployee(employee);
+        existingContract = contractRepositories.save(existingContract);
 
-        employee.setContract(contract);
+        employee.setContract(existingContract);
         employeeRepositories.save(employee);
 
+        // Trả về thông tin của employee và contract mới
         return new EmployeeContractDTO(
                 employee.getId(),
                 employee.getEmployeeCode(),
@@ -377,6 +391,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employee.getContract().getStartDate(),
                 employee.getContract().getEndDate(),
                 employee.getContract().getSignDate(),
+                employee.getContract().getContractStatus(),
                 employee.getContract().getNoteContract(),
                 employee.getContract().getNumberOfSignatures(),
                 employee.getContract().getContractCode(),
@@ -403,6 +418,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employee.getContract().getStartDate(),
                 employee.getContract().getEndDate(),
                 employee.getContract().getSignDate(),
+                employee.getContract().getContractStatus(),
                 employee.getContract().getNoteContract(),
                 employee.getContract().getNumberOfSignatures(),
                 employee.getContract().getContractCode(),
@@ -439,5 +455,44 @@ public class EmployeeServiceImpl implements EmployeeService {
 
             return genderPercentage;
         }
+
+    @Transactional
+    @Override
+    public ResponseEntity<ErrorResponse> updateEmployeeStatus(Long id, Long reasonId, LocalDate terminationDate) {
+        Optional<Employee> employeeOpt = employeeRepositories.findById(id);
+        if (!employeeOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    new ErrorResponse("failed", "Không thể tìm thấy nhân viên với id " + id, "")
+            );
+        }
+        Employee employee = employeeOpt.get();
+        if (reasonId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new ErrorResponse("failed", "Vui lòng cung cấp lý do nghỉ việc", "")
+            );
+        }
+        if (terminationDate == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new ErrorResponse("failed", "Vui lòng cung cấp ngày nghỉ việc", "")
+            );
+        }
+        if (terminationDate.isBefore(employee.getContract().getStartDate()) || terminationDate.isAfter(employee.getContract().getEndDate())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new ErrorResponse("failed", "Ngày nghỉ việc không hợp lệ", "")
+            );
+        }
+        if (terminationDate.isBefore(LocalDate.now())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new ErrorResponse("failed", "Ngày nghỉ việc phải là ngày trong tương lai", "")
+            );
+        }
+        TerminationReason reason = terminationReasonRepositories.findById(reasonId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lý do nghỉ việc với id " + reasonId));
+        employee.terminateEmployment(reason, terminationDate);
+        employeeRepositories.save(employee);
+        return ResponseEntity.status(HttpStatus.OK).body(
+                new ErrorResponse("ok", "Trạng thái nhân viên đã được cập nhật", "")
+        );
+    }
 }
 
