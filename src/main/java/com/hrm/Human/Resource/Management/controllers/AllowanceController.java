@@ -59,6 +59,4 @@ public class AllowanceController {
     public ResponseEntity<ErrorResponse> hardDeleteAllowance(@PathVariable Long id) {
         return allowanceService.hardDeleteAllowance(id);
     }
-
-
 }

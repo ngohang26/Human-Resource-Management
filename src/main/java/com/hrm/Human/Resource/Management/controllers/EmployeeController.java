@@ -123,23 +123,17 @@ public class EmployeeController {
         return employeeService.deleteEmployee(id);
     }
 
-    //??
-//    @PostMapping("/undo/{id}")
-//    public ResponseEntity<ErrorResponse> undoDelete(@PathVariable Long id) {
-//        return employeeService.undoDeleteEmployee(id);
+//    ??
+//    @DeleteMapping("/hardDelete/{id}")
+//    public ResponseEntity<ErrorResponse> hardDeleteEmployee(@PathVariable Long id) {
+//        return employeeService.hardDeleteEmployee(id);
 //    }
 
-    //??
-    @DeleteMapping("/hardDelete/{id}")
-    public ResponseEntity<ErrorResponse> hardDeleteEmployee(@PathVariable Long id) {
-        return employeeService.hardDeleteEmployee(id);
-    }
-
-    //??
-    @GetMapping(path = "/searchEmployees")
-    public Optional<Employee> searchEmployees(@RequestParam String keyword) {
-        return employeeService.searchEmployee(keyword);
-    }
+//    ??
+//    @GetMapping(path = "/searchEmployees")
+//    public Optional<Employee> searchEmployees(@RequestParam String keyword) {
+//        return employeeService.searchEmployee(keyword);
+//    }
 
     @PreAuthorize("hasAuthority('ADD_CONTRACT')")
     @GetMapping("/contracts")
@@ -150,14 +144,14 @@ public class EmployeeController {
 
     @PreAuthorize("hasAuthority('ADD_CONTRACT')")
     @PostMapping("/{employeeCode}/contract")
-    public ResponseEntity<EmployeeContractDTO> createContract(@PathVariable String employeeCode, @RequestBody Contract contract) {
+    public ResponseEntity<EmployeeContractDTO> createContract(@PathVariable String employeeCode, @Valid @RequestBody Contract contract) {
         EmployeeContractDTO createdContract = employeeService.createContract(employeeCode, contract);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdContract);
     }
 
     @PreAuthorize("hasAuthority('EDIT_CONTRACT')")
     @PutMapping("/{employeeCode}/contract")
-    public ResponseEntity<EmployeeContractDTO> updateContract(@PathVariable String employeeCode, @RequestBody Contract contract) {
+    public ResponseEntity<EmployeeContractDTO> updateContract(@PathVariable String employeeCode, @Valid @RequestBody Contract contract) {
         EmployeeContractDTO updatedContract = employeeService.updateContract(employeeCode, contract);
         return ResponseEntity.ok(updatedContract);
     }

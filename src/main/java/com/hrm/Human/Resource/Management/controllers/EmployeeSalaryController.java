@@ -1,11 +1,8 @@
 package com.hrm.Human.Resource.Management.controllers;
 
-import com.hrm.Human.Resource.Management.entity.EmployeeSalary;
 import com.hrm.Human.Resource.Management.entity.EmployeeSalaryRecord;
 import com.hrm.Human.Resource.Management.jwt.JwtTokenProvider;
-import com.hrm.Human.Resource.Management.service.AttendanceService;
 import com.hrm.Human.Resource.Management.service.EmployeeSalaryService;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -42,7 +42,7 @@ public class EmployeeAllowanceServiceImpl implements EmployeeAllowanceService {
     }
 
     @Override
-    public List<Allowance> getAllowancesForEmployee(String employeeCode, Integer year, Integer month) {
+    public List<Allowance> getAllowancesForEmployee(String employeeCode, int year, int month) {
         Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
         if (employee == null) {
             throw new RuntimeException("Employee not found");
@@ -60,20 +60,6 @@ public class EmployeeAllowanceServiceImpl implements EmployeeAllowanceService {
         return allowances;
     }
 
-    //    @Override
-//    public List<EmployeeAllowance> getAllowancesForEmployee(String employeeCode, int year, int month) {
-//        Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
-//        List<EmployeeAllowance> employeeAllowances = employeeAllowanceRepositories.findByEmployee(employee);
-//        List<Allowance> allowances = new ArrayList<>();
-//        for (EmployeeAllowance employeeAllowance : employeeAllowances) {
-//            // Kiểm tra nếu tháng và năm của startDate nằm trong tháng và năm được cung cấp
-//            if (employeeAllowance.getStartDate().getYear() == year &&
-//                    employeeAllowance.getStartDate().getMonthValue() <= month) {
-//                allowances.add(employeeAllowance.getAllowance());
-//            }
-//        }
-//        return allowances;
-//    }
     @Override
     public BigDecimal getTotalAllowance(String employeeCode, int year, int month) {
         Employee employee = employeeRepositories.findByEmployeeCode(employeeCode);
@@ -99,10 +85,21 @@ public class EmployeeAllowanceServiceImpl implements EmployeeAllowanceService {
     }
 
     private void validateAllowanceDates(YearMonth startDate, YearMonth endDate) {
+        LocalDate currentDate = LocalDate.now();
+        LocalDate startOfMonth = startDate.atDay(1);
+        LocalDate endOfMonth = endDate.atEndOfMonth();
+
         if (endDate.isBefore(startDate)) {
             throw new RuntimeException("Ngày kết thúc phải sau hoặc bằng ngày bắt đầu");
         }
+        if (startOfMonth.isBefore(currentDate.plusMonths(1))) {
+            throw new RuntimeException("Tháng bắt đầu phải là tháng sau tháng hiện tại");
+        }
+        if (endOfMonth.isBefore(currentDate.plusMonths(1))) {
+            throw new RuntimeException("Tháng kết thúc phải là tháng sau tháng hiện tại");
+        }
     }
+
 
     @Override
     public EmployeeAllowance addEmployeeAllowance(String employeeCode, EmployeeAllowance employeeAllowance) {
@@ -165,15 +162,4 @@ public class EmployeeAllowanceServiceImpl implements EmployeeAllowanceService {
                 .orElseThrow(() -> new RuntimeException("EmployeeAllowance not found for this employee"));
         employeeAllowanceRepositories.delete(employeeAllowance);
     }
-//
-//
-//    @PostConstruct
-//    @Transactional
-//    public void initializeEmployeeAllowances() {
-//        List<EmployeeAllowance> allowances = employeeAllowanceRepositories.findAll();
-//        for (EmployeeAllowance allowance : allowances) {
-//            allowance.updateStatusAndType();
-//            employeeAllowanceRepositories.save(allowance);
-//        }
-//    }
 }

@@ -108,7 +108,7 @@ public class UserController {
         return userService.changePermissions(id, newPermissionIds);
     }
 
-    @PreAuthorize("hasAuthority('EDIT_USER')")
+    @PreAuthorize("hasAuthority('VIEW_EMPLOYEE')")
     @PutMapping("/{id}/change-email")
     public ResponseEntity<?> changeEmail(@PathVariable Long id, @RequestBody EmailChangeRequest emailChangeRequest) {
         User user = userService.findById(id);

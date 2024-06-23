@@ -33,9 +33,10 @@ public class EmployeeAllowanceController {
         return new ResponseEntity<>(employeeAllowances, HttpStatus.OK);
     }
 
+    // Không dùng tới nữa
     @PreAuthorize("hasAuthority('VIEW_ALLOWANCE')")
     @GetMapping("/getEmployeeAllowances/{employeeCode}/{year}/{month}")
-    public ResponseEntity<List<Allowance>> getEmployeeAllowances(@PathVariable String employeeCode, @PathVariable Integer year, @PathVariable Integer month) {
+    public ResponseEntity<List<Allowance>> getEmployeeAllowances(@PathVariable String employeeCode, @PathVariable int year, @PathVariable int month) {
         List<Allowance> allowances = employeeAllowanceService.getAllowancesForEmployee(employeeCode, year, month);
         return ResponseEntity.ok(allowances);
     }

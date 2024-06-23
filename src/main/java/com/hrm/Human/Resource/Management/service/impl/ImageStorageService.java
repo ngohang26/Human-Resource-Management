@@ -18,7 +18,6 @@ import java.util.stream.Stream;
 @Service
 public class ImageStorageService implements IStorageService {
     private final Path storageFolder = Paths.get("uploads");
-
     public ImageStorageService() {
         try {
             Files.createDirectories(storageFolder);
@@ -35,8 +34,7 @@ public class ImageStorageService implements IStorageService {
 
     @Override
     public String storeFile(MultipartFile file, String subfolder) {
-        System.out.println("Storing file: " + file.getOriginalFilename());
-
+//        System.out.println("Storing file: " + file.getOriginalFilename());
         try {
             if (file.isEmpty()) {
                 throw new RuntimeException("Failed to store empty file.");
@@ -117,7 +115,6 @@ public class ImageStorageService implements IStorageService {
         } catch (IOException e) {
             throw new RuntimeException("Failed to load stored files", e);
         }
-
     }
 
     @Override
@@ -161,6 +158,4 @@ public class ImageStorageService implements IStorageService {
             throw new RuntimeException("Could not read file: " + filePath, exception);
         }
     }
-
-
 }

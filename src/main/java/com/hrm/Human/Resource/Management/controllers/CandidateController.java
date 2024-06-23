@@ -31,11 +31,10 @@ public class CandidateController {
     }
 
     @PreAuthorize("hasAuthority('ADD_CANDIDATE')")
-            @PostMapping("/{id}/updateStatus")
+    @PostMapping("/{id}/updateStatus")
     public ResponseEntity<String> updateCandidateStatus(@PathVariable Long id, @RequestBody CandidateUpdateDTO candidateUpdateDTO) {
         return candidateService.updateCandidateStatus(id, candidateUpdateDTO.getNewStatus(), candidateUpdateDTO.getCandidateDetails(), candidateUpdateDTO.getIdentityCardNumber());
     }
-
 
     @PreAuthorize("hasAuthority('ADD_CANDIDATE')")
     @GetMapping("/{id}")
@@ -60,7 +59,18 @@ public class CandidateController {
     public ResponseEntity<?> getCandidateCountByStatus() {
         try {
             Map<Candidate.CandidateStatus, CandidateStatusCount> countByStatus = candidateService.getCandidateCountByStatus();
-            return new  ResponseEntity<>(countByStatus, HttpStatus.OK);
+            return new ResponseEntity<>(countByStatus, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PreAuthorize("hasAuthority('ADD_CANDIDATE')")
+    @GetMapping("/getCandidateCountByStatusAndMonth/{year}/{month}")
+    public ResponseEntity<?> getCandidateCountByStatusAndMonth(@PathVariable int year, @PathVariable int month) {
+        try {
+            Map<Candidate.CandidateStatus, CandidateStatusCount> countByStatus = candidateService.getCandidateCountByStatusAndMonth(year, month);
+            return new ResponseEntity<>(countByStatus, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }

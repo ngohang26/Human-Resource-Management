@@ -11,8 +11,8 @@ import java.util.Optional;
 @EnableJpaRepositories
 @Repository
 public interface AllowanceRepositories extends JpaRepository<Allowance, Long> {
-    Optional<Allowance> findByAllowanceNameContaining(String jobAllowanceName);
+    Optional<Allowance> findByAllowanceNameContaining(String allowanceName);
 
-    Optional<Object> findByAllowanceName(String jobAllowanceName);
+    Optional<Object> findByAllowanceName(String allowanceName);
 
 }

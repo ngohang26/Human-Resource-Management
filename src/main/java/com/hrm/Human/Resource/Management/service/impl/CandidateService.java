@@ -126,7 +126,8 @@ public class CandidateService {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
-    public ResponseEntity<String> updateCandidateStatus(Long id, Candidate.CandidateStatus newStatus, Candidate candidateDetails, String identityCardNumber) {        Candidate candidate = getCandidate(id);
+    public ResponseEntity<String> updateCandidateStatus(Long id, Candidate.CandidateStatus newStatus, Candidate candidateDetails, String identityCardNumber) {
+        Candidate candidate = getCandidate(id);
         if (candidate != null) {
             switch (newStatus) {
                 case INITIAL_REVIEW:
@@ -147,6 +148,8 @@ public class CandidateService {
                     return makeOffer(id, jobOffer);
                 case CONTRACT_SIGNED:
                     if (candidate.getCurrentStatus() == Candidate.CandidateStatus.OFFER_MADE) {
+                        validateIdentityCardNumber(identityCardNumber); // Kiểm tra tính hợp lệ của identityCardNumber
+                        System.out.println("1" + identityCardNumber);
                         candidate.setCurrentStatus(Candidate.CandidateStatus.CONTRACT_SIGNED);
                         convertCandidateToEmployee(candidate.getId(), identityCardNumber);
                         emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
@@ -154,14 +157,73 @@ public class CandidateService {
                     }
                     break;
                 case REFUSE:
-                    if (candidate.getCurrentStatus() == Candidate.CandidateStatus.FIRST_INTERVIEW) {
-                        candidate.setFirstInterviewStatus(Candidate.InterviewStatus.FAILED);
-                    } else if (candidate.getCurrentStatus() == Candidate.CandidateStatus.SECOND_INTERVIEW) {
-                        candidate.setSecondInterviewStatus(Candidate.InterviewStatus.FAILED);
+                    String emailSubject = "Hồ sơ ứng tuyển của bạn: " + candidate.getJobPosition().getPosition().getPositionName();
+                    String emailBody;
+
+                    switch (candidate.getCurrentStatus()) {
+                        case FIRST_INTERVIEW:
+                            candidate.setFirstInterviewStatus(Candidate.InterviewStatus.FAILED);
+                            emailBody = "<p>Xin chào " + candidate.getCandidateName() + ",</p>"
+                                    + "<p>Chúng tôi rất cảm kích vì bạn đã dành thời gian tham gia phỏng vấn đầu tiên tại công ty chúng tôi. "
+                                    + "Tuy nhiên, sau khi xem xét kỹ lưỡng, chúng tôi rất tiếc phải thông báo rằng bạn chưa phù hợp với vị trí "
+                                    + "<b style=\"color:#9a6c8e\">" + candidate.getJobPosition().getPosition().getPositionName() + "</b> mà chúng tôi đang tuyển dụng.</p>"
+                                    + "<p>Chúng tôi đánh giá cao những nỗ lực và sự quan tâm của bạn dành cho công ty. "
+                                    + "Hy vọng rằng chúng tôi sẽ có cơ hội hợp tác trong tương lai.</p>"
+                                    + "<p>Chúc bạn thành công trong sự nghiệp.</p>"
+                                    + "<p>Trân trọng,</p>"
+                                    + "<p>Đội ngũ tuyển dụng</p>";
+                            break;
+                        case SECOND_INTERVIEW:
+                            candidate.setSecondInterviewStatus(Candidate.InterviewStatus.FAILED);
+                            emailBody = "<p>Xin chào " + candidate.getCandidateName() + ",</p>"
+                                    + "<p>Cảm ơn bạn đã tham gia vòng phỏng vấn thứ hai với công ty chúng tôi. "
+                                    + "Mặc dù chúng tôi đánh giá cao kiến thức và kỹ năng của bạn, nhưng sau khi xem xét kỹ lưỡng, "
+                                    + "chúng tôi rất tiếc phải thông báo rằng bạn không phù hợp với vị trí "
+                                    + "<b style=\"color:#9a6c8e\">" + candidate.getJobPosition().getPosition().getPositionName() + "</b> tại thời điểm này.</p>"
+                                    + "<p>Chúng tôi rất hy vọng rằng sẽ có cơ hội hợp tác với bạn trong tương lai. "
+                                    + "Chúc bạn nhiều thành công trong sự nghiệp.</p>"
+                                    + "<p>Trân trọng,</p>"
+                                    + "<p>Đội ngũ tuyển dụng</p>";
+                            break;
+                        case INITIAL_REVIEW:
+                            emailBody = "<p>Xin chào " + candidate.getCandidateName() + ",</p>"
+                                    + "<p>Cảm ơn bạn đã quan tâm và ứng tuyển vào vị trí "
+                                    + "<b style=\"color:#9a6c8e\">" + candidate.getJobPosition().getPosition().getPositionName() + "</b> tại công ty chúng tôi. "
+                                    + "Sau khi xem xét hồ sơ của bạn, chúng tôi rất tiếc phải thông báo rằng bạn không phù hợp với yêu cầu "
+                                    + "của vị trí này tại thời điểm hiện tại.</p>"
+                                    + "<p>Chúng tôi rất mong sẽ có cơ hội được xem xét hồ sơ của bạn trong những vị trí khác trong tương lai. "
+                                    + "Chúc bạn thành công trong sự nghiệp.</p>"
+                                    + "<p>Trân trọng,</p>"
+                                    + "<p>Đội ngũ tuyển dụng</p>";
+                            break;
+                        case OFFER_MADE:
+                            emailBody = "<p>Xin chào " + candidate.getCandidateName() + ",</p>"
+                                    + "<p>Cảm ơn bạn đã quan tâm và ứng tuyển vào vị trí "
+                                    + "<b style=\"color:#9a6c8e\">" + candidate.getJobPosition().getPosition().getPositionName() + "</b> tại công ty chúng tôi. "
+                                    + "Mặc dù chúng tôi đã gửi đề nghị công việc, nhưng rất tiếc khi biết rằng bạn không thể nhận đề nghị này.</p>"
+                                    + "<p>Chúng tôi đánh giá cao thời gian và sự quan tâm của bạn dành cho công ty. "
+                                    + "Hy vọng rằng chúng tôi sẽ có cơ hội hợp tác với bạn trong tương lai.</p>"
+                                    + "<p>Chúc bạn thành công trong sự nghiệp.</p>"
+                                    + "<p>Trân trọng,</p>"
+                                    + "<p>Đội ngũ tuyển dụng</p>";
+                            break;
+                        default:
+                            emailBody = "<p>Xin chào " + candidate.getCandidateName() + ",</p>"
+                                    + "<p>Cảm ơn bạn đã quan tâm và ứng tuyển vào vị trí "
+                                    + "<b style=\"color:#9a6c8e\">" + candidate.getJobPosition().getPosition().getPositionName() + "</b> tại công ty chúng tôi. "
+                                    + "Sau khi xem xét, chúng tôi rất tiếc phải thông báo rằng bạn không phù hợp với yêu cầu "
+                                    + "của vị trí này tại thời điểm hiện tại.</p>"
+                                    + "<p>Chúng tôi mong sẽ có cơ hội được xem xét hồ sơ của bạn trong những vị trí khác trong tương lai. "
+                                    + "Chúc bạn thành công trong sự nghiệp.</p>"
+                                    + "<p>Trân trọng,</p>"
+                                    + "<p>Đội ngũ tuyển dụng</p>";
                     }
+
+                    // Cập nhật trạng thái hiện tại thành REFUSE
                     candidate.setCurrentStatus(Candidate.CandidateStatus.REFUSE);
-                    emailService.sendEmail(candidate.getEmail(), "Hồ sơ ứng tuyển của bạn: "
-                            + candidate.getJobPosition().getPosition().getPositionName(), "Rất tiếc, hồ sơ của bạn không phù hợp với yêu cầu của chúng tôi.");
+
+                    // Gửi email thông báo từ chối
+                    emailService.sendEmail(candidate.getEmail(), emailSubject, emailBody);
                     break;
                 default:
                     throw new IllegalArgumentException("Invalid status");
@@ -171,7 +233,6 @@ public class CandidateService {
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Candidate not found");
     }
-
 
     public ResponseEntity<String> setInterviewTime(Long id, Map<String, String> payload) {
         Candidate candidate = getCandidate(id);
@@ -189,7 +250,7 @@ public class CandidateService {
                     + "”</b> tại <b>Tolo</b></p>" + "\n"
                     + "<p>Chúng tôi rất ấn tượng với kinh nghiệm và kỹ năng của bạn, và chúng tôi muốn mời bạn tham gia một cuộc phỏng vấn.</p>"
                     + "<p>Chúng tôi muốn đặt lịch phỏng vấn vào</p>" + dateTime.toString()
-                    + "<p>Phỏng vấn sẽ diễn ra tại tại <b>Tòa nhà ACB tại 12 Nguyen Trai, Hanoi</b></p>"
+                    + "<p>Phỏng vấn sẽ diễn ra tại tại <b>Tòa nhà ABC tại 12 Nguyen Trai, Hanoi</b></p>"
                     + "<p>Vui lòng xác nhận xem bạn có thể tham gia vào thời gian này không. Nếu không, hãy cho chúng tôi biết thời gian khác phù hợp với bạn trong tuần này.\n" +
                     "\n" +
                     "Chúng tôi mong muốn có cơ hội gặp bạn và tìm hiểu thêm về kinh nghiệm và mục tiêu nghề nghiệp của bạn.</p>"
@@ -226,7 +287,7 @@ public class CandidateService {
                     + "”</b> tại <b>Tolo</b></p>" + "\n"
                     + "<p>Chúng tôi rất ấn tượng với kinh nghiệm và kỹ năng của bạn, và chúng tôi muốn mời bạn tham gia một cuộc phỏng vấn thứ hai.</p>"
                     + "<p>Chúng tôi muốn đặt lịch phỏng vấn thứ hai vào</p>" + dateTime.toString()
-                    + "<p>Phỏng vấn sẽ diễn ra tại tại <b>Tòa nhà ACB tại 12 Nguyen Trai, Hanoi</b></p>"
+                    + "<p>Phỏng vấn sẽ diễn ra tại tại <b>Tòa nhà ABC tại 12 Nguyen Trai, Hanoi</b></p>"
                     + "<p>Vui lòng xác nhận xem bạn có thể tham gia vào thời gian này không. Nếu không, hãy cho chúng tôi biết thời gian khác phù hợp với bạn trong tuần này.\n" +
                     "\n" +
                     "Chúng tôi mong muốn có cơ hội gặp bạn và tìm hiểu thêm về kinh nghiệm và mục tiêu nghề nghiệp của bạn.</p>"
@@ -281,56 +342,69 @@ public class CandidateService {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Candidate not found");
     }
 
-    public void convertCandidateToEmployee(Long candidateId, String identityCardNumber) {
-        Candidate candidate = getCandidate(candidateId);
-        if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.CONTRACT_SIGNED) {
-            if (identityCardNumber != null && !identityCardNumber.isEmpty()) { // Kiểm tra null và rỗng
-//                System.out.println(identityCardNumber);
-                Employee employee = new Employee();
-                PersonalInfo personalInfo = new PersonalInfo();
-                Contract contract;
-                contract = new Contract();
-
-                employee.setFullName(candidate.getCandidateName());
-                employee.setPhoneNumber(candidate.getPhoneNumber());
-//                employee.getPosition.getPositonName(candidate.getJobPosition().getJobPositionName());
-                List<Experiences> experiences = new ArrayList<>();
-                for (Experiences experience : candidate.getExperiences()) {
-                    Experiences newExperience = new Experiences();
-                    newExperience.setExperienceName(experience.getExperienceName());
-                    newExperience.setRating(experience.getRating());
-                    experiences.add(newExperience);
-                }
-                employee.setExperiences(experiences);
-                List<Skills> skills = new ArrayList<>();
-                for (Skills skill : candidate.getSkills()) {
-                    Skills newSkill = new Skills();
-                    newSkill.setSkillName(skill.getSkillName());
-                    newSkill.setRating(skill.getRating());
-                    skills.add(newSkill);
-                }
-                employee.setSkills(skills);
-
-                personalInfo.setPersonalEmail(candidate.getEmail());
-                personalInfo.setSchool(candidate.getSchool());
-                personalInfo.setCertificates(candidate.getCertificates());
-                personalInfo.setCertificateLevel(candidate.getCertificateLevel());
-                personalInfo.setFieldOfStudy(candidate.getFieldOfStudy());
-                personalInfo.setIdentityCardNumber(identityCardNumber);
-                contract.setStartDate(candidate.getJobOffer().getStartDate());
-                contract.setEndDate(candidate.getJobOffer().getEndDate());
-                contract.setMonthlySalary(candidate.getJobOffer().getMonthlySalary());
-                contract.setNoteContract(candidate.getJobOffer().getNoteContract());
-                contract.setSignDate(LocalDate.now());
-                employee.setPersonalInfo(personalInfo);
-                employee.setContract(contract);
-                employeeRepositories.save(employee);
-            } else {
-                System.out.println(":))");
-            }
-
-        }
+    public Employee findEmployeeByIdentityCardNumber(String identityCardNumber) {
+        return employeeRepositories.findEmployeeByPersonalInfoIdentityCardNumber(identityCardNumber);
     }
+
+        private void validateIdentityCardNumber(String identityCardNumber) {
+
+            Employee existingEmployee = findEmployeeByIdentityCardNumber(identityCardNumber);
+            if (existingEmployee != null) {
+                throw new RuntimeException("Đã tồn tại nhân viên với số CCCD " + identityCardNumber);
+            }
+        }
+        public void convertCandidateToEmployee(Long candidateId, String identityCardNumber) {
+            System.out.println("số cccd" +identityCardNumber);
+            Candidate candidate = getCandidate(candidateId);
+            if (candidate != null && candidate.getCurrentStatus() == Candidate.CandidateStatus.CONTRACT_SIGNED) {
+                Position position = candidate.getJobPosition().getPosition();
+                Department department = position.getDepartment();
+                // Tiếp tục xử lý lưu thông tin vào Employee
+                if (position != null) {
+                    Employee employee = new Employee();
+                    PersonalInfo personalInfo = new PersonalInfo();
+                    Contract contract;
+                    contract = new Contract();
+                employee.setDepartment(department);
+                    employee.setPosition(position);
+                    employee.setFullName(candidate.getCandidateName());
+                    employee.setPhoneNumber(candidate.getPhoneNumber());
+                    List<Experiences> experiences = new ArrayList<>();
+                    for (Experiences experience : candidate.getExperiences()) {
+                        Experiences newExperience = new Experiences();
+                        newExperience.setExperienceName(experience.getExperienceName());
+                        newExperience.setRating(experience.getRating());
+                        experiences.add(newExperience);
+                    }
+                    employee.setExperiences(experiences);
+                    List<Skills> skills = new ArrayList<>();
+                    for (Skills skill : candidate.getSkills()) {
+                        Skills newSkill = new Skills();
+                        newSkill.setSkillName(skill.getSkillName());
+                        newSkill.setRating(skill.getRating());
+                        skills.add(newSkill);
+                    }
+                    employee.setSkills(skills);
+
+                    personalInfo.setPersonalEmail(candidate.getEmail());
+                    personalInfo.setSchool(candidate.getSchool());
+                    personalInfo.setCertificates(candidate.getCertificates());
+                    personalInfo.setCertificateLevel(candidate.getCertificateLevel());
+                    personalInfo.setFieldOfStudy(candidate.getFieldOfStudy());
+                    personalInfo.setIdentityCardNumber(identityCardNumber);
+                    contract.setStartDate(candidate.getJobOffer().getStartDate());
+                    contract.setEndDate(candidate.getJobOffer().getEndDate());
+                    contract.setMonthlySalary(candidate.getJobOffer().getMonthlySalary());
+                    contract.setNoteContract(candidate.getJobOffer().getNoteContract());
+                    contract.setSignDate(LocalDate.now());
+                    employee.setPersonalInfo(personalInfo);
+                    employee.setContract(contract);
+                    employeeRepositories.save(employee);
+                } else {
+
+                }
+            }
+        }
 
     public List<Candidate> getCandidate() {
         return candidateRepositories.findAll();
@@ -445,6 +519,32 @@ public class CandidateService {
             statusCount.setStatus(entry.getKey());
             statusCount.setCount(entry.getValue());
             statusCount.setPercentage(100.0 * entry.getValue() / total);
+            result.put(entry.getKey(), statusCount);
+        }
+
+        return result;
+    }
+
+    public Map<Candidate.CandidateStatus, CandidateStatusCount> getCandidateCountByStatusAndMonth(int year, int month) {
+        List<Candidate> candidates = candidateRepositories.findAll();
+
+        // Lọc các ứng viên theo năm và tháng, kiểm tra null cho dateApplied
+        List<Candidate> filteredCandidates = candidates.stream()
+                .filter(candidate -> candidate.getDateApplied() != null && candidate.getDateApplied().getYear() == year && candidate.getDateApplied().getMonthValue() == month)
+                .toList();
+
+        long totalFiltered = (long) filteredCandidates.size(); // Tổng số ứng viên đã lọc theo tháng và năm
+
+        Map<Candidate.CandidateStatus, Long> countMap = filteredCandidates.stream()
+                .collect(Collectors.groupingBy(Candidate::getCurrentStatus, Collectors.counting()));
+
+        Map<Candidate.CandidateStatus, CandidateStatusCount> result = new HashMap<>();
+        for (Map.Entry<Candidate.CandidateStatus, Long> entry : countMap.entrySet()) {
+            CandidateStatusCount statusCount = new CandidateStatusCount();
+            statusCount.setStatus(entry.getKey());
+            statusCount.setCount(entry.getValue());
+            // Tính tỷ lệ phần trăm dựa trên tổng số ứng viên đã lọc
+            statusCount.setPercentage(100.0 * entry.getValue() / totalFiltered);
             result.put(entry.getKey(), statusCount);
         }
 

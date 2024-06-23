@@ -7,9 +7,7 @@ import com.hrm.Human.Resource.Management.service.AttendanceService;
 import com.hrm.Human.Resource.Management.service.EmployeeAllowanceService;
 import com.hrm.Human.Resource.Management.service.EmployeeSalaryService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-//@EnableScheduling
 public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
     @Autowired
     private EmployeeRepositories employeeRepositories;
@@ -62,9 +59,8 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         LocalDate startDate = LocalDate.of(year, month, 1);
         LocalDate endDate = LocalDate.of(year, month, YearMonth.of(year, month).lengthOfMonth());
         List<Attendance> attendances = attendanceRepositories.findByEmployee_EmployeeCodeAndDateBetween(employeeCode, startDate, endDate);
-        return !attendances.isEmpty();
+        return !attendances.isEmpty();  // Trả về true nếu không rỗng
     }
-
 
     @Override
     public Map<String, BigDecimal> calculateOvertimeSalaryForEachEmployee(int year, int month) {
@@ -78,9 +74,8 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
             BigDecimal totalAllowance = employeeAllowanceService.getTotalAllowance(employeeCode, year, month);
 
             if (monthlySalary == null || totalOvertimeHours == null || totalAllowance == null) {
-                continue;
+                continue;  // Nếu 1 trong các thông tin trên không tồn tại thì sẽ bỏ qua nhân viên đó
             }
-
             BigDecimal overtimeSalary = calculateOvertimeSalary(monthlySalary, totalOvertimeHours, totalAllowance);
             overtimeSalaries.put(employeeCode, overtimeSalary);
         }
@@ -108,6 +103,7 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         return attendances.stream().mapToLong(Attendance::getOverTime).sum();
     }
 
+    // Phương thức tính lương tăng ca
     private BigDecimal calculateOvertimeSalary(BigDecimal monthlySalary, Long totalOvertimeHours, BigDecimal totalAllowance) {
         BigDecimal workDaysPerMonth = BigDecimal.valueOf(26);
         BigDecimal workHoursPerDay = BigDecimal.valueOf(8);
@@ -180,8 +176,7 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
     }
 
 
-    // luong truoc thue moi empl
-    @Override
+//    @Override
 //    public BigDecimal calculateTotalIncome(String employeeCode, int year, int month) {
 //        BigDecimal monthlySalary = getMonthlySalary(employeeCode);
 //        BigDecimal totalAllowance = employeeAllowanceService.getTotalAllowance(employeeCode, year, month);
@@ -196,6 +191,8 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
 //                .multiply(BigDecimal.valueOf(workingDaysInMonth)).subtract(insuranceInMonth);
 //    }
 
+    // Lương trước thuế của từng nhân viên
+    @Override
     public BigDecimal calculateTotalIncome(String employeeCode, int year, int month) {
         BigDecimal monthlySalary = getMonthlySalary(employeeCode);
         BigDecimal totalAllowance = employeeAllowanceService.getTotalAllowance(employeeCode, year, month);
@@ -331,6 +328,7 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         return totalInsurance.add(incomeTax);
     }
 
+    // chưa dùng
     public void calculateAndCacheEmployeeSalariesForMonth(int year, int month) {
         // Tính toán dữ liệu cho tất cả nhân viên và lưu vào bộ nhớ cache
         List<Employee> employees = employeeRepositories.findAll();
@@ -361,7 +359,7 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         BigDecimal netSalary = calculateNetSalary(employeeCode, year, month);
 
         if (monthlySalary == null || totalAllowance == null || incomeTax == null || workingDaysInMonth == null || totalIncome == null || socialInsurance == null || healthInsurance == null || unemploymentInsurance == null || totalInsurance == null || allowances == null || overTimeSalary == null || totalOverTimeHours == null || netSalary == null) {
-            return null; // Return null if any value is null
+            return null;
         }
 
         EmployeeSalary details = new EmployeeSalary();
@@ -397,7 +395,6 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
     public List<EmployeeSalaryRecord> getAllEmployeeSalaryRecords(int year, int month) {
         return employeeSalaryRecordRepositories.findByYearAndMonth(year, month);
     }
-
 
     @Override
     public Map<String, Long> calculateTotalOvertimeHoursByDepartment(int year, int month) {
@@ -440,6 +437,7 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         return totalOvertimeHoursPerMonth;
     }
 
+    // Thực hiện tính lương tháng cho từng nhân viên
     @Override
     public void updateEmployeeSalaryRecord(String employeeCode, int year, int month) {
         EmployeeSalary details = calculateEmployeeSalaryForMonth(employeeCode, year, month);
@@ -474,7 +472,8 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
                 record.setUnemploymentInsurance(details.getUnemploymentInsurance());
                 record.setTotalInsurance(details.getTotalInsurance());
                 record.setTotalDeductions(details.getTotalDeductions());
-            } else {
+            }
+            else {
                 record.setSocialInsurance(BigDecimal.ZERO);
                 record.setHealthInsurance(BigDecimal.ZERO);
                 record.setUnemploymentInsurance(BigDecimal.ZERO);
@@ -490,6 +489,7 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         }
     }
 
+    // Thực hiện tính lương cho tất cả nhân viên
     @Override
     public void updateAllEmployeeSalaryRecords(int year, int month) {
         List<Employee> employees = employeeRepositories.findAll();

@@ -19,7 +19,7 @@ public interface EmployeeService {
 
     Employee getEmployeeByEmployeeCode(String employeeCode);
 
-    Optional<Employee> getEmployeeById(Long id);
+//    Optional<Employee> getEmployeeById(Long id);
 
     Employee save(Employee employee);
 

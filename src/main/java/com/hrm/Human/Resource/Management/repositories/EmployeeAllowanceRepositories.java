@@ -20,4 +20,6 @@ public interface EmployeeAllowanceRepositories extends JpaRepository<EmployeeAll
     List<EmployeeAllowance> findByEmployee(Employee employee);
 
     EmployeeAllowance findByEmployeeAndAllowance(Employee employee, Allowance allowance);
+
+    boolean existsByAllowanceId(Long id);
 }

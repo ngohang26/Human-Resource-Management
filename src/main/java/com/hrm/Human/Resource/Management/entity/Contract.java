@@ -1,6 +1,7 @@
 package com.hrm.Human.Resource.Management.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -18,21 +19,29 @@ public class Contract {
     @Column(unique = true)
     private String contractCode;
 
+    @NotNull(message = "Bạn cần nhập ngày bắt đầu")
+    @Future(message = "Ngày bắt đầu phải là ngày trong tương lai")
     @Column(nullable = false)
     private LocalDate startDate;
 
+    @NotNull(message = "Bạn cần nhập ngày kết thúc")
+    @Future(message = "Ngày kết thúc phải là ngày trong tương lai")
     @Column(nullable = false)
     private LocalDate endDate;
 
+    @NotNull(message = "Bạn cần nhập ngày ký")
     @Column(nullable = false)
     private LocalDate signDate;
 
     @Column
     private String noteContract;
 
+    @Min(value = 1, message = "Số lượng lần ký phải ít nhất là 1")
     @Column(nullable = false)
     private int numberOfSignatures;
 
+    @NotNull(message = "Bạn cần nhập mức lương cơ bản")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Lương tháng phải lớn hơn 0")
     @Column(nullable = false)
     private BigDecimal monthlySalary;
 
@@ -46,7 +55,9 @@ public class Contract {
 
     public Contract() {
         this.contractStatus = ContractStatus.ACTIVE;
+        this.numberOfSignatures = 1;
     }
+
     @PostPersist
     public void generateContractCode() {
         LocalDate date = LocalDate.now();
@@ -56,6 +67,7 @@ public class Contract {
     }
 
     public void setEmployee(Employee employee) {
+        // Implementation goes here
     }
 
     public void checkContractStatus() {

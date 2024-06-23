@@ -10,7 +10,7 @@ import java.time.LocalTime;
 public class AttendanceDTO {
     private Long id;
     private LocalDate date;
-    private LocalTime timeIn;
+    private LocalTime timeIn    ;
     private LocalTime timeOut;
     private String employeeName;
     private String employeeCode;

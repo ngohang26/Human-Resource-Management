@@ -70,15 +70,22 @@ public class AllowanceServiceImpl implements AllowanceService {
     public ResponseEntity<ErrorResponse> hardDeleteAllowance(Long id) {
         boolean exists = allowanceRepositories.existsById(id);
         if (exists) {
+            boolean isInUse = employeeAllowanceRepositories.existsByAllowanceId(id);
+            if (isInUse) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                        new ErrorResponse("failed", "Trợ cấp đang được sử dụng và không thể xóa được", "")
+                );
+            }
             allowanceRepositories.deleteById(id);
             return ResponseEntity.status(HttpStatus.OK).body(
-                    new ErrorResponse("ok", "Delete allowance successfully", "")
+                    new ErrorResponse("ok", "Xóa trợ cấp thành công", "")
             );
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                new ErrorResponse("failed", "Cannot find allowance to delete", "")
+                new ErrorResponse("failed", "Không thể tìm thấy trợ cấp", "")
         );
     }
+
 
 
 

@@ -10,17 +10,16 @@ import com.hrm.Human.Resource.Management.repositories.EmployeeRepositories;
 import com.hrm.Human.Resource.Management.repositories.PermissionRepositories;
 import com.hrm.Human.Resource.Management.repositories.RoleRepositories;
 import com.hrm.Human.Resource.Management.repositories.UserRepositories;
+import com.hrm.Human.Resource.Management.response.CustomException;
 import com.hrm.Human.Resource.Management.response.ResourceNotFoundException;
 import com.hrm.Human.Resource.Management.service.UserService;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -76,6 +75,7 @@ public class UserServiceImpl implements UserService {
     }
 
 
+    // Khởi tạo các quyền mặc định cho các vai trò khi khởi động ứng dụng
     @PostConstruct
     public void init() {
         roleRepositories.findAll().forEach(this::setDefaultPermissionsForRole);
@@ -106,10 +106,33 @@ public class UserServiceImpl implements UserService {
         roleRepositories.save(role);
     }
 
+    private void validatePasswordComplexity(String password) {
+        String passwordPattern = "^(?=.*[0-9])(?=.*[a-zA-Z])(?=.*[!\"#$%&'()*+,-./:;<=>?@^_`{|}~])(?=\\S+$).{8,20}$";
+        if (!password.matches(passwordPattern)) {
+            throw new RuntimeException("Mật khẩu phải có độ dài từ 8 đến 20 ký tự, chứa ít nhất một ký tự số, một ký tự chữ và một ký tự đặc biệt.");
+        }
+    }
+
+
     @Override
     public User createUser(UserRegistrationDTO userRegistration) {
+        if (userRegistration.getUsername().trim().isEmpty()) {
+            throw new CustomException("Tên người dùng không được để trống");
+        }
+        if (userRegistration.getEmail().trim().isEmpty()) {
+            throw new CustomException("Email không được để trống");
+        }
+        if (userRegistration.getRoleId() == null) {
+            throw new CustomException("Vai trò không được để trống");
+        }
+        try {
+            validatePasswordComplexity(userRegistration.getPassword());
+        } catch (RuntimeException e) {
+            throw new CustomException(e.getMessage());
+        }
+
         if (userRepositories.existsByUsername(userRegistration.getUsername())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tài khoản đã tồn tại");
+            throw new CustomException("Tài khoản đã tồn tại");
         }
 
         User user = new User();
@@ -123,13 +146,11 @@ public class UserServiceImpl implements UserService {
 
         Set<Permission> rolePermissions = new HashSet<>(role.getPermissions());
 
-        // Add additional permissions
         Set<Permission> additionalPermissions = userRegistration.getPermissionIds().stream()
                 .map(id -> permissionRepositories.findById(id)
                         .orElseThrow(() -> new RuntimeException("Không tìm thấy quyền này")))
                 .collect(Collectors.toSet());
 
-        // Add additional permissions to rolePermissions
         rolePermissions.addAll(additionalPermissions);
 
         user.setPermissions(rolePermissions);
@@ -190,6 +211,11 @@ public class UserServiceImpl implements UserService {
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
             throw new RuntimeException("Mật khẩu mới không được giống mật khẩu cũ");
         }
+        try {
+            validatePasswordComplexity(newPassword);
+        } catch (RuntimeException e) {
+            throw new CustomException(e.getMessage());
+        }
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepositories.save(user);
         return "Mật khẩu được thay đổi thành công";
@@ -222,7 +248,7 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(tempPassword));
         userRepositories.save(user);
         emailService.sendNewPasswordEmail(adminEmail, tempPassword); // Gửi mật khẩu mới đến email của quản trị viên
-        return "Temporary password has been created and sent to the admin.";
+        return "Mật khẩu tạm thời đã được tạo và gửi tới email đã nhập.";
     }
 
     @Override

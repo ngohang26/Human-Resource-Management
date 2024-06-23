@@ -2,7 +2,6 @@ package com.hrm.Human.Resource.Management.service;
 
 import com.hrm.Human.Resource.Management.dto.UserEmployeeDTO;
 import com.hrm.Human.Resource.Management.dto.UserRegistrationDTO;
-import com.hrm.Human.Resource.Management.entity.Permission;
 import com.hrm.Human.Resource.Management.entity.User;
 
 import java.util.List;
@@ -16,7 +15,6 @@ public interface UserService {
     UserEmployeeDTO getUserById(Long userId);
 
     User createUser(UserRegistrationDTO userRegistration);
-
 
     Set<Map<String, String>> getUserPermissions(Long id);
 

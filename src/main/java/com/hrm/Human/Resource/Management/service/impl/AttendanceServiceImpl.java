@@ -36,7 +36,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Autowired
     private EmployeeRepositories employeeRepositories;
-    private static final Logger logger = (Logger) LoggerFactory.getLogger(AttendanceServiceImpl.class);
+//    private static final Logger logger = (Logger) LoggerFactory.getLogger(AttendanceServiceImpl.class);
 
     public Attendance createWorkTime(Employee employee, LocalDate date) {
         Faker faker = Faker.instance();
@@ -126,6 +126,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         return attendances.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
+    // Tính số ngày làm việc của tất cả nhân viên trong một tháng cụ thể
     @Override
     public Map<String, Integer> calculateWorkdays(int year, int month) {
         Map<String, Integer> workdaysMap = new HashMap<>();
@@ -136,7 +137,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         for (Attendance attendance : attendances) {
             String employeeCode = attendance.getEmployee().getEmployeeCode();
-            Integer workdays = attendance.calculateWorkdays(); // Tính số ngày công
+            Integer workdays = attendance.calculateWorkdays(); // Tính số ngày công, lấy tại attendace
             if (workdays != null) {
                 workdaysMap.put(employeeCode, workdaysMap.getOrDefault(employeeCode, 0) + workdays);
             }
@@ -216,7 +217,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         return result;
     }
 
-    @Scheduled(cron = "0 0 0 * * ?") // Chạy mỗi ngày vào lúc 00:00
+    @Scheduled(cron = "0 0 23 * * ?")
     public void createDailyWorkTimes() {
         LocalDate today = LocalDate.now();
         List<Attendance> attendancesToday = attendanceRepositories.findByDate(today);

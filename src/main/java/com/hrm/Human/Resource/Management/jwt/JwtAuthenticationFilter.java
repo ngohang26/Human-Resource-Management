@@ -10,7 +10,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-
+//  Là một filter dùng để xác thực và phân quyền request bằng JWT
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;

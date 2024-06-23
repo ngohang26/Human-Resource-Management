@@ -7,7 +7,6 @@ import com.hrm.Human.Resource.Management.response.ErrorResponse;
 import com.hrm.Human.Resource.Management.response.ResourceNotFoundException;
 import com.hrm.Human.Resource.Management.service.EmployeeService;
 import com.hrm.Human.Resource.Management.service.PositionService;
-import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
@@ -15,12 +14,11 @@ import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -79,10 +77,10 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
     }
 
-    @Override
-    public Optional<Employee> getEmployeeById(Long id) {
-        return employeeRepositories.findById(id);
-    }
+//    @Override
+//    public Optional<Employee> getEmployeeById(Long id) {
+//        return employeeRepositories.findById(id);
+//    }
 
     @Override
     public List<Employee> getEmployees() {
@@ -138,40 +136,39 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employees.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-
-@Transactional
+    @Transactional
     @Override
     public EmployeeDTO saveEmployee(EmployeeDTO employeeDTO) {
-    if (employeeDTO.getFullName() == null || employeeDTO.getFullName().trim().isEmpty()) {
-        throw new RuntimeException("Vui lòng điền đầy đủ thông tin vào form trước khi lưu.");
-    }
+        if (employeeDTO.getFullName() == null || employeeDTO.getFullName().trim().isEmpty()) {
+            throw new RuntimeException("Vui lòng điền đầy đủ thông tin vào form trước khi lưu.");
+        }
         Employee employee = convertToEntity(employeeDTO);
         String identityCardNumber = employee.getPersonalInfo().getIdentityCardNumber();
         Employee existingEmployee = findEmployeeByIdentityCardNumber(identityCardNumber);
         if (existingEmployee != null) {
             throw new RuntimeException("Đã tồn tại nhân viên với số CCCD " + identityCardNumber);
         }
-    Position position = positionRepositories.findById(employee.getPosition().getId())
-            .orElseThrow(() -> new IllegalArgumentException("Position not found with id " + employee.getPosition().getId()));
-    employee.setPosition(position);
+        Position position = positionRepositories.findById(employee.getPosition().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Position not found with id " + employee.getPosition().getId()));
+        employee.setPosition(position);
 
-    Department department = position.getDepartment();
-    employee.setDepartment(department);
+        Department department = position.getDepartment();
+        employee.setDepartment(department);
 
-    for (Skills skill : employee.getSkills()) {
-        SkillName skillName = skillNameRepositories.findById(skill.getSkillName().getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy SkillName với id: " + skill.getSkillName().getId()));
-        skill.setSkillName(skillName);
-    }
+        for (Skills skill : employee.getSkills()) {
+            SkillName skillName = skillNameRepositories.findById(skill.getSkillName().getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy SkillName với id: " + skill.getSkillName().getId()));
+            skill.setSkillName(skillName);
+        }
 
-    for (Experiences experience : employee.getExperiences()) {
-        ExperienceName experienceName = experienceNameRepositories.findById(experience.getExperienceName().getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy ExperienceName với id: " + experience.getExperienceName().getId()));
-        experience.setExperienceName(experienceName);
-    }
+        for (Experiences experience : employee.getExperiences()) {
+            ExperienceName experienceName = experienceNameRepositories.findById(experience.getExperienceName().getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy ExperienceName với id: " + experience.getExperienceName().getId()));
+            experience.setExperienceName(experienceName);
+        }
 
 
-    Employee savedEmployee = employeeRepositories.save(employee);
+        Employee savedEmployee = employeeRepositories.save(employee);
 
         return convertToDTO(savedEmployee);
     }
@@ -267,21 +264,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         );
     }
 
-//    @Override
-//    public ResponseEntity<ErrorResponse> undoDeleteEmployee(Long id) {
-//        Optional<Employee> employee = employeeRepositories.findById((id));
-//        if (employee.isPresent()) {
-//            Employee p = employee.get();
-//            employeeRepositories.save(p);
-//            return ResponseEntity.status((HttpStatus.OK)).body(
-//                    new ErrorResponse("ok", "Undo employee successfully", "")
-//            );
-//        }
-//        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-//                new ErrorResponse("failed", "Cannot fond employee to undo", "")
-//        );
-//    }
-
     @Override
     public ResponseEntity<ErrorResponse> hardDeleteEmployee(Long id) {
         boolean exists = employeeRepositories.existsById(id);
@@ -338,7 +320,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         ;
         Contract existingContract = employee.getContract();
         if (existingContract != null) {
-            throw new IllegalStateException("Contract already exists for this employee");
+            throw new IllegalStateException("Hợp đồng đã tồn tại với nhân viên này");
         }
         contract.setEmployee(employee);
         contract = contractRepositories.save(contract);
@@ -362,8 +344,9 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employee.getContract().getMonthlySalary()
         );
     }
+
     @Override
-    public EmployeeContractDTO updateContract(String employeeCode, Contract contract) {
+    public EmployeeContractDTO updateContract(String employeeCode, Contract updatedContract) {
         Employee employee = employeeRepositories.findByEmployeeCodeOrThrow(employeeCode);
         if (employee == null) {
             throw new ResourceNotFoundException("Employee not found");
@@ -373,11 +356,27 @@ public class EmployeeServiceImpl implements EmployeeService {
             throw new IllegalStateException("No contract found for this employee");
         }
 
-        BeanUtils.copyProperties(contract, existingContract, "id");
+        // Cập nhật các trường cho phép
+        if (updatedContract.getNumberOfSignatures() > 0) {
+            existingContract.setNumberOfSignatures(updatedContract.getNumberOfSignatures());
+        }
+        if (updatedContract.getStartDate() != null && updatedContract.getStartDate().isAfter(LocalDate.now())) {
+            existingContract.setStartDate(updatedContract.getStartDate());
+        }
+        if (updatedContract.getEndDate() != null && updatedContract.getEndDate().isAfter(LocalDate.now())) {
+            existingContract.setEndDate(updatedContract.getEndDate());
+        }
+        if (updatedContract.getMonthlySalary() != null && updatedContract.getMonthlySalary().compareTo(BigDecimal.ZERO) > 0) {
+            existingContract.setMonthlySalary(updatedContract.getMonthlySalary());
+        }
+        if (updatedContract.getNoteContract() != null) {
+            existingContract.setNoteContract(updatedContract.getNoteContract());
+        }
 
-        existingContract.setEmployee(employee);
+        // Lưu contract cập nhật
         existingContract = contractRepositories.save(existingContract);
 
+        // Cập nhật thông tin employee
         employee.setContract(existingContract);
         employeeRepositories.save(employee);
 
@@ -388,14 +387,14 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employee.getFullName(),
                 employee.getPosition(),
                 employee.getDepartment(),
-                employee.getContract().getStartDate(),
-                employee.getContract().getEndDate(),
-                employee.getContract().getSignDate(),
-                employee.getContract().getContractStatus(),
-                employee.getContract().getNoteContract(),
-                employee.getContract().getNumberOfSignatures(),
-                employee.getContract().getContractCode(),
-                employee.getContract().getMonthlySalary()
+                existingContract.getStartDate(),
+                existingContract.getEndDate(),
+                existingContract.getSignDate(),
+                existingContract.getContractStatus(),
+                existingContract.getNoteContract(),
+                existingContract.getNumberOfSignatures(),
+                existingContract.getContractCode(),
+                existingContract.getMonthlySalary()
         );
     }
 
@@ -436,25 +435,25 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public GenderPercentage getGenderPercentage() {
 
-            Query totalQuery = entityManager.createQuery("SELECT COUNT(e) FROM Employee e");
-            long totalEmployees = (Long) totalQuery.getSingleResult();
+        Query totalQuery = entityManager.createQuery("SELECT COUNT(e) FROM Employee e");
+        long totalEmployees = (Long) totalQuery.getSingleResult();
 
-            Query maleQuery = entityManager.createQuery("SELECT COUNT(e) FROM Employee e WHERE e.personalInfo.sex = :sex");
-            maleQuery.setParameter("sex", "Nam");
-            long maleEmployees = (Long) maleQuery.getSingleResult();
+        Query maleQuery = entityManager.createQuery("SELECT COUNT(e) FROM Employee e WHERE e.personalInfo.sex = :sex");
+        maleQuery.setParameter("sex", "Nam");
+        long maleEmployees = (Long) maleQuery.getSingleResult();
 
-            maleQuery.setParameter("sex", "Nữ");
-            long femaleEmployees = (Long) maleQuery.getSingleResult();
+        maleQuery.setParameter("sex", "Nữ");
+        long femaleEmployees = (Long) maleQuery.getSingleResult();
 
-            int malePercentage = (int) (((double) maleEmployees / totalEmployees) * 100);
-            int femalePercentage = (int) (((double) femaleEmployees / totalEmployees) * 100);
+        int malePercentage = (int) (((double) maleEmployees / totalEmployees) * 100);
+        int femalePercentage = (int) (((double) femaleEmployees / totalEmployees) * 100);
 
-            GenderPercentage genderPercentage = new GenderPercentage();
-            genderPercentage.setMalePercentage(malePercentage);
-            genderPercentage.setFemalePercentage(femalePercentage);
+        GenderPercentage genderPercentage = new GenderPercentage();
+        genderPercentage.setMalePercentage(malePercentage);
+        genderPercentage.setFemalePercentage(femalePercentage);
 
-            return genderPercentage;
-        }
+        return genderPercentage;
+    }
 
     @Transactional
     @Override
