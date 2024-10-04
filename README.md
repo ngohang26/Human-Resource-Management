@@ -7,11 +7,19 @@ Human resource management software is created for the purpose of professional hu
  Working time management - attendance: Track and manage working time and attendance of employees.
  Salary management: Track and manage employee salaries by month.
  Reporting: Provides charts of human resource-related data, helping business leaders make strategic decisions based on real data.  Contract management: Track and manage employee contracts.
+
 **Home page interface**
+
 ![image](https://github.com/user-attachments/assets/a84f2d02-f22d-40c9-ad1e-f63a1ee975dd)
+
 **Home page interface**
+
 ![image](https://github.com/user-attachments/assets/8fa63fdc-e616-4583-a833-72884c56bc90)
+
 **Employee management interface**
+
 ![image](https://github.com/user-attachments/assets/533679f7-7e01-453c-88dc-a2b0815868fe)
+
 **Report interface**
+
 ![image](https://github.com/user-attachments/assets/56e545dc-86f4-451e-9226-bc1d696ce706)
